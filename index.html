@@ -1,0 +1,4424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CIS Digital Finance System - Per Diem</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { 
+      font-family: 'Inter', sans-serif; 
+      position: relative;
+      min-height: 100vh;
+    }
+    
+    /* CIS Logo Background */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: url('C:/Users/TemesgenYitayew/Downloads/cis.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      opacity: 0.1;
+      z-index: -1;
+    }
+    
+    /* Ensure content is readable on the background */
+    main {
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Header background with slight transparency */
+    header {
+      background-color: rgba(29, 78, 216, 0.95);
+    }
+    
+    .hidden { display: none; }
+    .notification {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      padding: 15px 20px;
+      border-radius: 5px;
+      color: white;
+      z-index: 1000;
+      transition: opacity 0.3s;
+    }
+    .success { background-color: #10b981; }
+    .error { background-color: #ef4444; }
+    .info { background-color: #3b82f6; }
+    .warning { background-color: #f59e0b; }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; }
+      .print-section { 
+        display: block !important; 
+        margin: 0;
+        padding: 20px;
+      }
+      body::before {
+        display: none;
+      }
+      /* Hide financial statement when memo is printed - FIXED */
+      #financialStatement.print-section {
+        display: none !important;
+      }
+      #officeMemoSection.print-section {
+        display: block !important;
+      }
+    }
+    .chart-container {
+      position: relative;
+      height: 300px;
+      width: 100%;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-pending {
+      background-color: #fff3cd;
+      color: #856404;
+    }
+    .status-approved {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .status-rejected {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    
+    /* Logo styles */
+    .logo-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 50px;
+      width: auto;
+    }
+    
+    .cis-logo, .aau-logo {
+      height: 100%;
+      width: auto;
+      object-fit: contain;
+      background-color: white;
+      padding: 4px;
+      border-radius: 4px;
+    }
+    
+    .cis-logo {
+      margin-right: auto;
+    }
+    
+    .aau-logo {
+      margin-left: auto;
+    }
+    
+    /* Header title center alignment */
+    .header-title {
+      flex: 1;
+      text-align: center;
+    }
+    
+    /* Financial statement print styles */
+    .print-header {
+      border-bottom: 2px solid #1d4ed8;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .print-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    
+    .print-table th {
+      background-color: #f1f5f9;
+      padding: 10px;
+      text-align: left;
+      border: 1px solid #cbd5e1;
+    }
+    
+    .print-table td {
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+    }
+    
+    .print-total {
+      background-color: #f8fafc;
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+    
+    .signature-section {
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid #cbd5e1;
+    }
+    
+    .signature-line {
+      width: 200px;
+      border-top: 1px solid #000;
+      margin-top: 40px;
+    }
+    
+    /* Modal styles */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+    
+    .modal-content {
+      background-color: white;
+      margin: 5% auto;
+      padding: 20px;
+      border-radius: 8px;
+      width: 90%;
+      max-width: 700px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid #e5e7eb;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .close-modal {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #6b7280;
+    }
+    
+    .close-modal:hover {
+      color: #111827;
+    }
+    
+    /* Office Memo Styles */
+    .memo-section {
+      display: none;
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 40px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    .memo-header {
+      text-align: center;
+      margin-bottom: 40px;
+      border-bottom: 2px solid #1d4ed8;
+      padding-bottom: 20px;
+    }
+    
+    .memo-body {
+      line-height: 1.8;
+      font-size: 14px;
+      color: #333;
+    }
+    
+    .memo-field {
+      background-color: #f0f4f8;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 600;
+      color: #1d4ed8;
+      border: 1px dashed #cbd5e1;
+    }
+    
+    .memo-footer {
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid #e5e7eb;
+      text-align: center;
+      font-size: 12px;
+      color: #666;
+    }
+    
+    /* Admin action buttons */
+    .admin-action-buttons {
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+    }
+    
+    .admin-action-buttons button {
+      font-size: 11px;
+      padding: 3px 6px;
+    }
+    
+    /* Comparison chart styles */
+    .comparison-chart-container {
+      position: relative;
+      height: 400px;
+      width: 100%;
+    }
+    
+    /* New chart styles */
+    .role-department-chart-container {
+      position: relative;
+      height: 350px;
+      width: 100%;
+    }
+    
+    /* Finance Analytics chart styles */
+    .finance-chart-container {
+      position: relative;
+      height: 320px;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex flex-col">
+  <header class="text-white shadow no-print">
+    <div class="container mx-auto px-6 py-4 flex items-center justify-between">
+      <!-- CIS Logo (Left) -->
+      <div class="logo-container">
+        <img src="C:/Users/TemesgenYitayew/Downloads/cis.png" 
+             alt="CIS Logo" 
+             class="cis-logo">
+      </div>
+      
+      <!-- Center Title -->
+      <div class="header-title mx-4">
+        <h1 class="text-xl font-semibold">CIS Digital Finance System</h1>
+        <p class="text-sm opacity-90">Center for Implementation Sciences</p>
+      </div>
+      
+      <!-- AAU Logo (Right) -->
+      <div class="logo-container">
+        <img src="C:/Users/TemesgenYitayew/Downloads/aau.png" 
+             alt="Addis Ababa University Logo" 
+             class="aau-logo">
+      </div>
+    </div>
+    
+    <!-- Navigation Bar -->
+    <div class="bg-blue-800 py-3">
+      <div class="container mx-auto px-6 flex items-center justify-center space-x-6">
+        <nav class="flex items-center space-x-6">
+          <button id="navHome" onclick="showPage('home')" class="hover:underline text-white">Home</button>
+          <button id="navRegister" onclick="showPage('register')" class="hover:underline text-white">Register</button>
+          <button id="navLogin" onclick="showPage('login')" class="hover:underline text-white">Login</button>
+          <button id="navPerDiemForm" onclick="showPage('perDiemForm')" class="hover:underline text-white hidden">Per Diem Form</button>
+          <button id="navPerDiemHistory" onclick="showPage('perDiemHistory')" class="hover:underline text-white hidden">Per Diem History</button>
+          <button id="navApprovals" onclick="showPage('approvals')" class="hover:underline text-white hidden">Approvals</button>
+          <button id="navAdmin" onclick="showPage('admin')" class="hover:underline text-white hidden">Admin</button>
+          <button id="navLogout" onclick="handleLogout()" class="hover:underline text-white hidden">Logout</button>
+          <span id="userInfo" class="hidden text-sm font-medium text-white"></span>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <main class="flex-grow container mx-auto px-6 py-12 no-print">
+    <!-- Home Section -->
+    <section id="home" class="text-center py-12 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg p-8 shadow">
+      <h2 class="text-3xl font-bold text-blue-800 mb-4">CIS Digital Finance System</h2>
+      <p class="text-gray-600 mb-6 max-w-2xl mx-auto">Manage projects, per-diem calculations, approvals, and financial statements in one place.</p>
+      <div id="homeButtons" class="flex items-center justify-center gap-4">
+        <button onclick="showPage('register')" class="bg-blue-600 text-white px-6 py-2 rounded-md font-semibold hover:bg-blue-700">Register</button>
+        <button onclick="showPage('login')" class="border border-blue-600 text-blue-600 px-6 py-2 rounded-md font-semibold hover:bg-blue-600 hover:text-white">Login</button>
+      </div>
+    </section>
+
+    <!-- Register Section -->
+    <section id="register" class="hidden max-w-lg mx-auto p-8 bg-white rounded shadow">
+      <h3 class="text-2xl font-bold text-center mb-4 text-blue-700">User Registration</h3>
+      <form id="registerForm" class="space-y-4">
+        <input id="regName" class="w-full p-3 border rounded" placeholder="Full name" required />
+        <input id="regEmail" class="w-full p-3 border rounded" placeholder="Email" type="email" required />
+        <input id="regPassword" class="w-full p-3 border rounded" placeholder="Password" type="password" required />
+        <select id="regRole" class="w-full p-3 border rounded">
+          <option>User</option>
+          <option>Project Manager</option>
+          <option>PI</option>
+          <option>Finance Officer</option>
+          <option>Admin</option>
+        </select>
+        <select id="regDepartment" class="w-full p-3 border rounded">
+          <option value="">Select Department (Optional)</option>
+          <option value="SLL360">SLL360</option>
+          <option value="ACS">ACS</option>
+          <option value="IKMC">IKMC</option>
+          <option value="SLS">SLS</option>
+          <option value="HPV Vision">HPV Vision</option>
+          <option value="Estimate">Estimate</option>
+        </select>
+        <div class="flex gap-3">
+          <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded">Register</button>
+          <button type="button" onclick="showPage('home')" class="flex-1 border rounded">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Login Section -->
+    <section id="login" class="hidden max-w-md mx-auto p-8 bg-white rounded shadow">
+      <h3 class="text-2xl font-bold text-center mb-4 text-blue-700">Login</h3>
+      <form id="loginForm" class="space-y-4">
+        <input id="loginEmail" class="w-full p-3 border rounded" placeholder="Email" type="email" required />
+        <input id="loginPassword" class="w-full p-3 border rounded" placeholder="Password" type="password" required />
+        <div class="flex gap-3">
+          <button type="submit" class="flex-1 bg-blue-600 text-white py-2 rounded">Login</button>
+          <button type="button" onclick="showPage('home')" class="flex-1 border rounded">Back</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Per Diem Form Section -->
+    <section id="perDiemForm" class="hidden max-w-4xl mx-auto bg-white p-6 rounded shadow">
+      <h3 class="text-2xl font-bold text-blue-800 mb-4">Per Diem Application Form</h3>
+      <form id="perDiemApplicationForm" class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-gray-700 mb-2">Full Name</label>
+            <input type="text" id="fullName" class="w-full p-3 border rounded" required>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">Department</label>
+            <select id="department" class="w-full p-3 border rounded" required>
+              <option value="">Select Department</option>
+              <option value="SLL360">SLL360</option>
+              <option value="ACS">ACS</option>
+              <option value="IKMC">IKMC</option>
+              <option value="SLS">SLS</option>
+              <option value="HPV Vision">HPV Vision</option>
+              <option value="Estimate">Estimate</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">Place of Departure</label>
+            <input type="text" id="departure" class="w-full p-3 border rounded" required>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">Destination City Type</label>
+            <select id="destinationType" class="w-full p-3 border rounded" required>
+              <option value="">Select Destination Type</option>
+              <option value="small">Small City</option>
+              <option value="big">Big City</option>
+              <option value="addis">Addis Ababa</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">Transported By</label>
+            <select id="transportedBy" class="w-full p-3 border rounded" required>
+              <option value="">Select Transport</option>
+              <option value="air">Air</option>
+              <option value="car">Car</option>
+              <option value="bus">Bus</option>
+              <option value="train">Train</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">No of Kms</label>
+            <input type="number" id="kms" class="w-full p-3 border rounded">
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">Source of Payment</label>
+            <select id="paymentSource" class="w-full p-3 border rounded" required>
+              <option value="">Select Payment Source</option>
+              <option value="SLL360">SLL360</option>
+              <option value="ACS">ACS</option>
+              <option value="IKMC">IKMC</option>
+              <option value="SLS">SLS</option>
+              <option value="HPV Vision">HPV Vision</option>
+              <option value="Estimate">Estimate</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">Program Manager</label>
+            <select id="programManager" class="w-full p-3 border rounded" required>
+              <option value="">Select Program Manager</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">Travel Type</label>
+            <select id="travelType" class="w-full p-3 border rounded" required>
+              <option value="">Select Travel Type</option>
+              <option value="overnight">Overnight</option>
+              <option value="sameDay">Same-Day</option>
+              <option value="training">Training</option>
+              <option value="withinCity">Within City</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">Start Date</label>
+            <input type="date" id="startDate" class="w-full p-3 border rounded" required>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">End Date</label>
+            <input type="date" id="endDate" class="w-full p-3 border rounded" required>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">Start Time</label>
+            <input type="time" id="startTime" class="w-full p-3 border rounded" required>
+          </div>
+          <div>
+            <label class="block text-gray-700 mb-2">End Time</label>
+            <input type="time" id="endTime" class="w-full p-3 border rounded" required>
+          </div>
+        </div>
+        <div>
+          <label class="block text-gray-700 mb-2">Purpose of Travel</label>
+          <textarea id="purpose" class="w-full p-3 border rounded" rows="3" required></textarea>
+        </div>
+        <div class="flex gap-3">
+          <button type="submit" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold">Submit Application</button>
+          <button type="button" onclick="showPage('home')" class="border px-6 py-2 rounded">Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <!-- Per Diem History Section -->
+    <section id="perDiemHistory" class="hidden bg-white p-6 rounded shadow max-w-5xl mx-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-2xl font-bold text-blue-700">Per Diem History</h3>
+        <div class="flex gap-2">
+          <button onclick="filterPerDiemHistory('all')" class="text-sm bg-blue-600 text-white px-3 py-1 rounded">All</button>
+          <button onclick="filterPerDiemHistory('approved')" class="text-sm bg-white border px-3 py-1 rounded">Approved</button>
+          <button onclick="filterPerDiemHistory('pending')" class="text-sm bg-white border px-3 py-1 rounded">Pending</button>
+          <button onclick="exportPerDiemHistory()" class="text-sm bg-white border px-3 py-1 rounded">Export</button>
+        </div>
+      </div>
+      <table class="w-full border-collapse">
+        <thead class="bg-blue-600 text-white">
+          <tr>
+            <th class="py-3 px-4 text-left">Application ID</th>
+            <th class="py-3 px-4 text-left">Destination</th>
+            <th class="py-3 px-4 text-left">Travel Dates</th>
+            <th class="py-3 px-4 text-left">Amount</th>
+            <th class="py-3 px-4 text-left">Status</th>
+            <th class="py-3 px-4 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="perDiemHistoryBody">
+        </tbody>
+      </table>
+      <div class="mt-4 text-right">
+        <button onclick="showPage('home')" class="text-sm text-gray-600">Back</button>
+      </div>
+    </section>
+
+    <!-- Approvals Section -->
+    <section id="approvals" class="hidden bg-white p-6 rounded shadow max-w-5xl mx-auto">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-2xl font-bold text-blue-700">Approvals</h3>
+        <div class="flex gap-2">
+          <button id="pendingBtn" onclick="filterApprovals('pending')" class="text-sm bg-blue-600 text-white px-3 py-1 rounded">Pending</button>
+          <button id="approvedBtn" onclick="filterApprovals('approved')" class="text-sm bg-white border px-3 py-1 rounded">Approved</button>
+          <button id="rejectedBtn" onclick="filterApprovals('rejected')" class="text-sm bg-white border px-3 py-1 rounded">Rejected</button>
+          <button id="reApprovableBtn" onclick="filterApprovals('reApprovable')" class="text-sm bg-yellow-600 text-white px-3 py-1 rounded">Re-approvable</button>
+        </div>
+      </div>
+      
+      <table class="w-full border-collapse">
+        <thead class="bg-blue-600 text-white">
+          <tr>
+            <th class="py-3 px-4 text-left">Application ID</th>
+            <th class="py-3 px-4 text-left">Applicant</th>
+            <th class="py-3 px-4 text-left">Department</th>
+            <th class="py-3 px-4 text-left">Destination</th>
+            <th class="py-3 px-4 text-left">Travel Dates</th>
+            <th class="py-3 px-4 text-left">Amount</th>
+            <th class="py-3 px-4 text-left">Current Status</th>
+            <th class="py-3 px-4 text-left">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="approvalsBody">
+        </tbody>
+      </table>
+      <div class="mt-4 text-right">
+        <button onclick="showPage('home')" class="text-sm text-gray-600">Back</button>
+      </div>
+    </section>
+
+    <!-- Admin Dashboard Section -->
+    <section id="admin" class="hidden bg-white p-6 rounded shadow max-w-7xl mx-auto">
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-2xl font-bold text-blue-700">Admin Dashboard</h3>
+        <div class="flex gap-2">
+          <button id="userManagementBtn" onclick="showAdminSection('userManagement')" class="text-sm bg-blue-600 text-white px-4 py-2 rounded">User Management</button>
+          <button id="perDiemManagementBtn" onclick="showAdminSection('perDiemManagement')" class="text-sm bg-white border border-blue-600 text-blue-600 px-4 py-2 rounded">Per Diem Management</button>
+          <button id="financeManagementBtn" onclick="showAdminSection('financeManagement')" class="text-sm bg-white border border-blue-600 text-blue-600 px-4 py-2 rounded">Finance Analytics</button>
+          <button id="officeMemoBtn" onclick="showAdminSection('officeMemo')" class="text-sm bg-white border border-blue-600 text-blue-600 px-4 py-2 rounded">Office Memos</button>
+          <button onclick="refreshAdminData()" class="text-sm bg-gray-600 text-white px-4 py-2 rounded">Refresh</button>
+        </div>
+      </div>
+
+      <!-- User Management Section -->
+      <div id="userManagement" class="admin-section">
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="text-xl font-bold text-blue-800">User Management</h4>
+          <button onclick="exportUserReport()" class="text-sm bg-green-600 text-white px-3 py-1 rounded">Export Users</button>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h5 class="font-semibold text-blue-700">Total Users</h5>
+            <p class="text-2xl font-bold text-blue-800" id="totalUsers">0</p>
+          </div>
+          <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+            <h5 class="font-semibold text-green-700">Active Users</h5>
+            <p class="text-2xl font-bold text-green-800" id="activeUsers">0</p>
+          </div>
+          <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+            <h5 class="font-semibold text-purple-700">User Roles</h5>
+            <p class="text-2xl font-bold text-purple-800" id="userRoles">0</p>
+          </div>
+        </div>
+
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-2">
+            <h5 class="font-semibold text-gray-700">Users by Role</h5>
+          </div>
+          <div class="chart-container">
+            <canvas id="usersByRoleChart"></canvas>
+          </div>
+        </div>
+
+        <!-- UPDATED: Department vs Role Stacked Bar Chart -->
+        <div class="mb-6">
+          <div class="flex justify-between items-center mb-2">
+            <h5 class="font-semibold text-gray-700">Department vs Role Distribution (Stacked)</h5>
+          </div>
+          <div class="role-department-chart-container">
+            <canvas id="roleDepartmentChart"></canvas>
+          </div>
+        </div>
+
+        <table class="w-full border-collapse">
+          <thead class="bg-blue-600 text-white">
+            <tr>
+              <th class="py-3 px-4 text-left">Name</th>
+              <th class="py-3 px-4 text-left">Email</th>
+              <th class="py-3 px-4 text-left">Role</th>
+              <th class="py-3 px-4 text-left">Department</th>
+              <th class="py-3 px-4 text-left">Joined</th>
+              <th class="py-3 px-4 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="usersTableBody">
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Per Diem Management Section -->
+      <div id="perDiemManagement" class="admin-section hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="text-xl font-bold text-blue-800">Per Diem Management</h4>
+          <div class="flex gap-2">
+            <select id="perDiemFilter" class="text-sm border rounded px-3 py-1" onchange="filterPerDiemAdmin()">
+              <option value="all">All Applications</option>
+              <option value="pending">Pending</option>
+              <option value="approved">Approved</option>
+              <option value="rejected">Rejected</option>
+              <option value="reApprovable">Re-approvable</option>
+              <option value="today">Today</option>
+              <option value="thisWeek">This Week</option>
+              <option value="thisMonth">This Month</option>
+            </select>
+            <button onclick="exportPerDiemAdminReport()" class="text-sm bg-green-600 text-white px-3 py-1 rounded">Export</button>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h5 class="font-semibold text-blue-700">Total Applications</h5>
+            <p class="text-2xl font-bold text-blue-800" id="adminTotalApplications">0</p>
+          </div>
+          <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+            <h5 class="font-semibold text-green-700">Approved</h5>
+            <p class="text-2xl font-bold text-green-800" id="adminApprovedApplications">0</p>
+          </div>
+          <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+            <h5 class="font-semibold text-red-700">Rejected</h5>
+            <p class="text-2xl font-bold text-red-800" id="adminRejectedApplications">0</p>
+          </div>
+          <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+            <h5 class="font-semibold text-yellow-700">Re-approvable</h5>
+            <p class="text-2xl font-bold text-yellow-800" id="adminReApprovableApplications">0</p>
+          </div>
+        </div>
+
+        <table class="w-full border-collapse">
+          <thead class="bg-blue-600 text-white">
+            <tr>
+              <th class="py-3 px-4 text-left">App ID</th>
+              <th class="py-3 px-4 text-left">Applicant</th>
+              <th class="py-3 px-4 text-left">Department</th>
+              <th class="py-3 px-4 text-left">Destination</th>
+              <th class="py-3 px-4 text-left">Travel Dates</th>
+              <th class="py-3 px-4 text-left">Amount</th>
+              <th class="py-3 px-4 text-left">Status</th>
+              <th class="py-3 px-4 text-left">Submitted</th>
+              <th class="py-3 px-4 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="perDiemAdminBody">
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Finance Management Section -->
+      <div id="financeManagement" class="admin-section hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="text-xl font-bold text-blue-800">Finance Analytics</h4>
+          <div class="flex gap-2">
+            <select id="timePeriod" class="text-sm border rounded px-3 py-1">
+              <option value="month">This Month</option>
+              <option value="lastMonth">Last Month</option>
+              <option value="year">This Year</option>
+              <option value="lastYear">Last Year</option>
+            </select>
+            <button onclick="generateFinanceReport()" class="text-sm bg-blue-600 text-white px-3 py-1 rounded">Generate Report</button>
+            <button onclick="exportFinanceReport()" class="text-sm bg-green-600 text-white px-3 py-1 rounded">Export Report</button>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h5 class="font-semibold text-blue-700">Total Applications</h5>
+            <p class="text-2xl font-bold text-blue-800" id="totalApplications">0</p>
+          </div>
+          <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+            <h5 class="font-semibold text-green-700">Approved</h5>
+            <p class="text-2xl font-bold text-green-800" id="approvedApplications">0</p>
+          </div>
+          <div class="bg-red-50 p-4 rounded-lg border border-red-200">
+            <h5 class="font-semibold text-red-700">Rejected</h5>
+            <p class="text-2xl font-bold text-red-800" id="rejectedApplications">0</p>
+          </div>
+          <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+            <h5 class="font-semibold text-purple-700">Approval Rate</h5>
+            <p class="text-2xl font-bold text-purple-800" id="approvalRate">0%</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div class="bg-white p-4 rounded-lg border border-gray-200">
+            <h5 class="font-semibold text-gray-700 mb-2">Applications by Project</h5>
+            <div class="finance-chart-container">
+              <canvas id="applicationsByProjectChart"></canvas>
+            </div>
+          </div>
+          <div class="bg-white p-4 rounded-lg border border-gray-200">
+            <h5 class="font-semibold text-gray-700 mb-2">Approval Status by Project</h5>
+            <div class="finance-chart-container">
+              <canvas id="approvalStatusChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border border-gray-200 mb-6">
+          <h5 class="font-semibold text-gray-700 mb-2">Monthly Trends</h5>
+          <div class="finance-chart-container">
+            <canvas id="monthlyTrendsChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border border-gray-200 mb-6">
+          <h5 class="font-semibold text-gray-700 mb-2">Project Performance Comparison</h5>
+          <div class="comparison-chart-container">
+            <canvas id="comparisonChart"></canvas>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border border-gray-200">
+          <h5 class="font-semibold text-gray-700 mb-4">Detailed Project Report</h5>
+          <table class="w-full border-collapse">
+            <thead class="bg-blue-600 text-white">
+              <tr>
+                <th class="py-3 px-4 text-left">Project</th>
+                <th class="py-3 px-4 text-left">Total</th>
+                <th class="py-3 px-4 text-left">Approved</th>
+                <th class="py-3 px-4 text-left">Rejected</th>
+                <th class="py-3 px-4 text-left">Pending</th>
+                <th class="py-3 px-4 text-left">Approval Rate</th>
+                <th class="py-3 px-4 text-left">Total Amount</th>
+              </tr>
+            </thead>
+            <tbody id="projectReportBody">
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Office Memo Management Section -->
+      <div id="officeMemo" class="admin-section hidden">
+        <div class="flex justify-between items-center mb-4">
+          <h4 class="text-xl font-bold text-blue-800">Office Memo Management</h4>
+          <div class="flex gap-2">
+            <select id="memoFilter" class="text-sm border rounded px-3 py-1" onchange="filterOfficeMemos()">
+              <option value="all">All Memos</option>
+              <option value="today">Today</option>
+              <option value="thisWeek">This Week</option>
+              <option value="thisMonth">This Month</option>
+            </select>
+            <button onclick="exportOfficeMemos()" class="text-sm bg-green-600 text-white px-3 py-1 rounded">Export Memos</button>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <h5 class="font-semibold text-blue-700">Total Memos</h5>
+            <p class="text-2xl font-bold text-blue-800" id="totalMemos">0</p>
+          </div>
+          <div class="bg-green-50 p-4 rounded-lg border border-green-200">
+            <h5 class="font-semibold text-green-700">Generated</h5>
+            <p class="text-2xl font-bold text-green-800" id="generatedMemos">0</p>
+          </div>
+          <div class="bg-purple-50 p-4 rounded-lg border border-purple-200">
+            <h5 class="font-semibold text-purple-700">Pending Review</h5>
+            <p class="text-2xl font-bold text-purple-800" id="pendingMemos">0</p>
+          </div>
+        </div>
+
+        <div class="bg-white p-4 rounded-lg border border-gray-200 mb-6">
+          <h5 class="font-semibold text-gray-700 mb-4">Recent Office Memos</h5>
+          <table class="w-full border-collapse">
+            <thead class="bg-blue-600 text-white">
+              <tr>
+                <th class="py-3 px-4 text-left">Memo ID</th>
+                <th class="py-3 px-4 text-left">Application ID</th>
+                <th class="py-3 px-4 text-left">Applicant</th>
+                <th class="py-3 px-4 text-left">Project</th>
+                <th class="py-3 px-4 text-left">Amount</th>
+                <th class="py-3 px-4 text-left">Generated Date</th>
+                <th class="py-3 px-4 text-left">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="officeMemoBody">
+            </tbody>
+          </table>
+        </div>
+        
+        <div class="bg-white p-4 rounded-lg border border-gray-200">
+          <h5 class="font-semibold text-gray-700 mb-4">Generate New Memo</h5>
+          <div class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-gray-700 mb-2">Select Approved Application</label>
+                <select id="memoApplicationSelect" class="w-full p-3 border rounded" onchange="loadApplicationForMemo()">
+                  <option value="">Select an approved application</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-gray-700 mb-2">Ledger Code</label>
+                <input type="text" id="memoLedgerCode" class="w-full p-3 border rounded" placeholder="Enter ledger code">
+              </div>
+            </div>
+            <div>
+              <label class="block text-gray-700 mb-2">Additional Notes (Optional)</label>
+              <textarea id="memoNotes" class="w-full p-3 border rounded" rows="3" placeholder="Any additional notes for the memo"></textarea>
+            </div>
+            <div class="flex gap-3">
+              <button onclick="generateOfficeMemo()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold">Generate Office Memo</button>
+              <button onclick="previewOfficeMemo()" class="border border-blue-600 text-blue-600 px-6 py-2 rounded font-semibold">Preview</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-4 text-right">
+        <button onclick="showPage('home')" class="text-sm text-gray-600">Back</button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Application Details Modal -->
+  <div id="applicationDetailsModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="text-xl font-bold text-blue-800">Application Details</h3>
+        <button class="close-modal" onclick="closeApplicationModal()">&times;</button>
+      </div>
+      <div id="applicationDetailsContent">
+        <!-- Content will be filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Financial Statement Print Section -->
+  <section id="financialStatement" class="hidden print-section bg-white p-8 max-w-4xl mx-auto">
+    <div class="print-header text-center mb-6">
+      <div class="flex justify-between items-center mb-4">
+        <div class="text-left">
+          <img src="C:/Users/TemesgenYitayew/Downloads/cis.png" alt="CIS Logo" class="h-16 inline-block">
+          <img src="C:/Users/TemesgenYitayew/Downloads/aau.png" alt="AAU Logo" class="h-16 inline-block ml-4">
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-blue-800">FINANCIAL STATEMENT</h2>
+          <p class="text-gray-600 font-medium">CIS Digital Finance System</p>
+          <p class="text-sm text-gray-500">Center for Implementation Sciences</p>
+          <p class="text-sm text-gray-500">Addis Ababa University</p>
+        </div>
+        <div class="text-right">
+          <p class="text-sm"><strong>Statement ID:</strong> <span id="printStatementId" class="font-bold">FS-001</span></p>
+          <p class="text-sm"><strong>Date:</strong> <span id="printIssueDate">01/12/2023</span></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mb-6">
+      <h3 class="text-lg font-bold text-blue-700 mb-3 border-b pb-2">Applicant Information</h3>
+      <div class="grid grid-cols-2 gap-4 mb-4">
+        <div>
+          <p><strong>Applicant Name:</strong> <span id="printApplicantName" class="font-medium"></span></p>
+          <p><strong>Department:</strong> <span id="printDepartment"></span></p>
+          <p><strong>Employee ID:</strong> <span id="printEmployeeId">N/A</span></p>
+        </div>
+        <div>
+          <p><strong>Application ID:</strong> <span id="printApplicationId" class="font-medium"></span></p>
+          <p><strong>Payment Source:</strong> <span id="printPaymentSource"></span></p>
+          <p><strong>Payment Date:</strong> <span id="printPaymentDate"></span></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mb-6">
+      <h3 class="text-lg font-bold text-blue-700 mb-3 border-b pb-2">Travel Details</h3>
+      <div class="grid grid-cols-2 gap-4 mb-3">
+        <div>
+          <p><strong>Program Manager:</strong> <span id="printProgramManager"></span></p>
+          <p><strong>Principal Investigator:</strong> <span id="printPI"></span></p>
+          <p><strong>Travel Purpose:</strong> <span id="printPurpose"></span></p>
+        </div>
+        <div>
+          <p><strong>Departure:</strong> <span id="printDeparture"></span></p>
+          <p><strong>Destination:</strong> <span id="printDestination"></span></p>
+          <p><strong>Transportation:</strong> <span id="printTransport"></span></p>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-4 mb-3">
+        <div>
+          <p><strong>Travel Dates:</strong> <span id="printTravelDates"></span></p>
+          <p><strong>Travel Type:</strong> <span id="printTravelType"></span></p>
+        </div>
+        <div>
+          <p><strong>Travel Times:</strong> <span id="printTravelTimes"></span></p>
+          <p><strong>Distance (Kms):</strong> <span id="printDistance">0</span></p>
+        </div>
+      </div>
+    </div>
+    
+    <div class="mb-6">
+      <h3 class="text-lg font-bold text-blue-700 mb-3 border-b pb-2">Financial Details</h3>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>Description</th>
+            <th>Days</th>
+            <th>Rate (ETB)</th>
+            <th>Amount (ETB)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Per Diem Allowance</td>
+            <td class="text-center" id="printDays">0</td>
+            <td class="text-right" id="printRate">0</td>
+            <td class="text-right" id="printAmount">0</td>
+          </tr>
+          <tr id="transportRow">
+            <td>Transportation Allowance</td>
+            <td class="text-center">-</td>
+            <td class="text-right">-</td>
+            <td class="text-right" id="printTransportAmount">0</td>
+          </tr>
+          <tr id="otherRow">
+            <td>Other Allowances</td>
+            <td class="text-center">-</td>
+            <td class="text-right">-</td>
+            <td class="text-right" id="printOtherAmount">0</td>
+          </tr>
+          <tr class="print-total">
+            <td colspan="3" class="text-right font-bold">Total Amount:</td>
+            <td class="text-right font-bold" id="printTotalAmount">0 ETB</td>
+          </tr>
+        </tbody>
+      </table>
+      
+      <div class="mt-4">
+        <p><strong>Amount in Words:</strong> <span id="printAmountInWords" class="italic">Zero Ethiopian Birr</span></p>
+      </div>
+    </div>
+    
+    <div class="mb-6">
+      <h3 class="text-lg font-bold text-blue-700 mb-3 border-b pb-2">Approval History</h3>
+      <table class="print-table">
+        <thead>
+          <tr>
+            <th>Status</th>
+            <th>Approved By</th>
+            <th>Role</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="printApprovalHistory">
+        </tbody>
+      </table>
+    </div>
+    
+    <div class="signature-section">
+      <div class="grid grid-cols-3 gap-8">
+        <div class="text-center">
+          <p class="mb-1"><strong>Applicant Signature</strong></p>
+          <div class="signature-line"></div>
+          <p class="mt-2 text-sm">Date: ________________</p>
+        </div>
+        <div class="text-center">
+          <p class="mb-1"><strong>Finance Officer Signature</strong></p>
+          <div class="signature-line"></div>
+          <p class="mt-2 text-sm">Date: ________________</p>
+        </div>
+        <div class="text-center">
+          <p class="mb-1"><strong>Authorized Signature</strong></p>
+          <div class="signature-line"></div>
+          <p class="mt-2 text-sm">Date: ________________</p>
+        </div>
+      </div>
+      
+      <div class="mt-8 text-center text-sm text-gray-500">
+        <p>This is a computer-generated statement. No physical signature is required.</p>
+        <p>Generated by CIS Digital Finance System | © 2025 Center for Implementation Sciences</p>
+      </div>
+    </div>
+    
+    <div class="text-center mt-8 no-print">
+      <button onclick="window.print()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold mr-2 hover:bg-blue-700">
+        <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+        </svg>
+        Print Statement
+      </button>
+      <button onclick="hideFinancialStatement()" class="border border-blue-600 text-blue-600 px-6 py-2 rounded font-semibold hover:bg-blue-50">
+        Back to Dashboard
+      </button>
+    </div>
+  </section>
+
+  <!-- Office Memo Print Section -->
+  <section id="officeMemoSection" class="hidden print-section bg-white p-8 max-w-4xl mx-auto memo-section">
+    <div class="memo-header">
+      <h2 class="text-2xl font-bold text-blue-800">OFFICE MEMO</h2>
+      <p class="text-gray-600">Center for Implementation Sciences (CIS) in Health</p>
+      <p class="text-sm text-gray-500">Addis Ababa University</p>
+    </div>
+    
+    <div class="memo-body">
+      <div class="text-right mb-6">
+        <p><strong>Date:</strong> <span id="memoDate" class="memo-field"></span></p>
+        <p><strong>Memo ID:</strong> <span id="memoId" class="memo-field">OM-001</span></p>
+      </div>
+      
+      <div class="mb-8">
+        <p><span id="memoPIName" class="memo-field"></span><br>
+        Akiliu Lemma Health Research Institute<br>
+        Sefere Selam Campus</p>
+      </div>
+      
+      <div class="mb-8">
+        <p>Prof Wakgari Deressa<br>
+        Akiliu Lemma Institute of Health Research Director<br>
+        Sefere Selam Campus</p>
+      </div>
+      
+      <div class="mb-8">
+        <p><strong>Greetings,</strong></p>
+        <p>I hope this letter finds you well.</p>
+      </div>
+      
+      <div class="mb-8">
+        <p>I am writing to request a perdiem payment from the project <span id="memoProjectName" class="memo-field"></span> with ledger code <span id="memoLedgerCodeDisplay" class="memo-field"></span>.</p>
+      </div>
+      
+      <div class="mb-8">
+        <p>The requested amount is for <span id="memoTravelerName" class="memo-field"></span> who will be traveling to <span id="memoDestination" class="memo-field"></span> on/from <span id="memoTravelDate" class="memo-field"></span> for <span id="memoPurpose" class="memo-field"></span>. This expenditure is crucial for our ongoing Center's operations and aligns with our financial planning.</p>
+      </div>
+      
+      <div class="mb-8">
+        <p>I kindly ask for your prompt attention to this matter. Your approval will ensure that we can proceed without delay and continue to deliver the high standard of service that our Center is known for. Please feel free to contact me should you require any additional information or clarification regarding this request.</p>
+      </div>
+      
+      <div class="mb-8">
+        <p>Thank you for your understanding and support.</p>
+      </div>
+      
+      <div class="mb-12">
+        <p><strong>Sincerely,</strong></p>
+        <br><br>
+        <p><span id="memoPISignature" class="memo-field"></span></p>
+        <p>Principal Investigator</p>
+      </div>
+      
+      <div class="memo-footer">
+        <p><strong>CC:</strong> Center for Implementation Sciences (CIS) in Health</p>
+        <p>Generated by CIS Digital Finance System | © 2025 Center for Implementation Sciences</p>
+      </div>
+    </div>
+    
+    <div class="text-center mt-8 no-print">
+      <button onclick="window.print()" class="bg-blue-600 text-white px-6 py-2 rounded font-semibold mr-2 hover:bg-blue-700">
+        <svg class="w-5 h-5 inline-block mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+        </svg>
+        Print Memo
+      </button>
+      <button onclick="hideOfficeMemo()" class="border border-blue-600 text-blue-600 px-6 py-2 rounded font-semibold hover:bg-blue-50">
+        Back to Dashboard
+      </button>
+    </div>
+  </section>
+
+  <footer class="bg-blue-700 text-white text-center py-6 no-print">
+    <div class="container mx-auto px-6">
+      <p class="text-sm">© 2025 CIS Digital Finance System | Developed by Temesgen Azmeraw</p>
+      <p class="text-xs mt-2 opacity-80">Center for Implementation Sciences (CIS) - Addis Ababa University</p>
+    </div>
+  </footer>
+
+  <script>
+    // Initialize data storage
+    let users = JSON.parse(localStorage.getItem('cis_users')) || [];
+    let perDiemApplications = JSON.parse(localStorage.getItem('cis_perDiemApplications')) || [];
+    let financialStatements = JSON.parse(localStorage.getItem('cis_financialStatements')) || [];
+    let officeMemos = JSON.parse(localStorage.getItem('cis_officeMemos')) || [];
+    let currentUser = JSON.parse(localStorage.getItem('cis_currentUser')) || null;
+    
+    // Define project managers and PIs with specific passwords
+    const projectManagers = [
+      { id: 'pm1', name: 'Abebech', department: 'SLL360', email: 'abebech@gmail.com', password: 'abebech123' },
+      { id: 'pm2', name: 'Rediet', department: 'ACS', email: 'rediet@gmail.com', password: 'rediet123' },
+      { id: 'pm3', name: 'Dorka', department: 'IKMC', email: 'dorka@gmail.com', password: 'dorka123' },
+      { id: 'pm4', name: 'Miraf Walelign', department: 'SLS', email: 'miraf@gmail.com', password: 'miraf123' },
+      { id: 'pm5', name: 'Selamawit Hirpa', department: 'HPV Vision', email: 'selamawit@gmail.com', password: 'selam123' },
+      { id: 'pm6', name: 'Abigia Wondemagegn', department: 'Estimate', email: 'abigia@gmail.com', password: 'abigia123' }
+    ];
+    
+    const principalInvestigators = [
+      { id: 'pi1', name: 'Birhan', department: 'SLL360', email: 'birhan@gmail.com', password: 'birhan123' },
+      { id: 'pi2', name: 'Abiy', department: 'General', email: 'abiy@gmail.com', password: 'abiy123' }
+    ];
+
+    // Chart instances storage
+    window.usersByRoleChart = null;
+    window.roleDepartmentChart = null;
+    window.applicationsByProjectChart = null;
+    window.approvalStatusChart = null;
+    window.monthlyTrendsChart = null;
+    window.comparisonChart = null;
+
+    // Initialize the app
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log("DOM Loaded - Initializing app");
+      initializeUsers();
+      
+      // Check if user is logged in
+      if (currentUser) {
+        console.log("Current user found:", currentUser.name);
+        updateUIForLoggedInUser();
+      }
+      
+      // Add event listeners
+      document.getElementById('registerForm')?.addEventListener('submit', handleRegister);
+      document.getElementById('loginForm')?.addEventListener('submit', handleLogin);
+      document.getElementById('perDiemApplicationForm')?.addEventListener('submit', handlePerDiemSubmit);
+      
+      // Populate program manager dropdown
+      populateProgramManagers();
+      
+      // Load demo data if needed
+      if (perDiemApplications.length === 0) {
+        console.log("No applications found, setting up demo data");
+        setupDemoData();
+      }
+      
+      // Show home page by default
+      showPage('home');
+    });
+
+    function initializeUsers() {
+      let needsUpdate = false;
+      
+      // Add project managers with specific passwords
+      projectManagers.forEach(pm => {
+        const existingUser = users.find(user => user.email === pm.email);
+        
+        if (!existingUser) {
+          const newUser = {
+            id: pm.id,
+            name: pm.name,
+            email: pm.email,
+            password: pm.password,
+            role: 'Project Manager',
+            department: pm.department,
+            createdAt: new Date().toISOString()
+          };
+          
+          users.push(newUser);
+          needsUpdate = true;
+        }
+      });
+      
+      // Add principal investigators with specific passwords
+      principalInvestigators.forEach(pi => {
+        const existingUser = users.find(user => user.email === pi.email);
+        
+        if (!existingUser) {
+          const newUser = {
+            id: pi.id,
+            name: pi.name,
+            email: pi.email,
+            password: pi.password,
+            role: 'PI',
+            department: pi.department,
+            createdAt: new Date().toISOString()
+          };
+          
+          users.push(newUser);
+          needsUpdate = true;
+        }
+      });
+      
+      // Add a finance officer if doesn't exist
+      const financeUser = users.find(user => user.role === 'Finance Officer');
+      if (!financeUser) {
+        const newUser = {
+          id: 'finance1',
+          name: 'Finance Officer',
+          email: 'finance@gmail.com',
+          password: 'finance123',
+          role: 'Finance Officer',
+          department: 'Finance',
+          createdAt: new Date().toISOString()
+        };
+        
+        users.push(newUser);
+        needsUpdate = true;
+      }
+      
+      // Add an admin user if doesn't exist
+      const adminUser = users.find(user => user.role === 'Admin');
+      if (!adminUser) {
+        const newUser = {
+          id: 'admin1',
+          name: 'System Admin',
+          email: 'admin@gmail.com',
+          password: 'admin123',
+          role: 'Admin',
+          department: 'Administration',
+          createdAt: new Date().toISOString()
+        };
+        
+        users.push(newUser);
+        needsUpdate = true;
+      }
+      
+      // Save updated users if needed
+      if (needsUpdate) {
+        localStorage.setItem('cis_users', JSON.stringify(users));
+      }
+    }
+
+    function setupDemoData() {
+      const demoApplications = [
+        {
+          id: 'PD-2023-001',
+          userId: 'user1',
+          userName: 'Demo User',
+          fullName: 'Demo User',
+          department: 'SLL360',
+          departure: 'Addis Ababa',
+          destinationType: 'big',
+          transportedBy: 'air',
+          kms: 500,
+          paymentSource: 'SLL360',
+          programManagerId: 'pm1',
+          programManagerName: 'Abebech',
+          programManagerDepartment: 'SLL360',
+          assignedPI: 'pi1',
+          assignedPIName: 'Birhan',
+          travelType: 'overnight',
+          startDate: '2023-11-15',
+          endDate: '2023-11-18',
+          startTime: '08:00',
+          endTime: '17:00',
+          purpose: 'Project meeting and site visit',
+          amount: 9300,
+          days: 3,
+          rate: 3100,
+          status: 'Submitted',
+          statusHistory: [
+            {
+              status: 'Submitted',
+              by: 'Demo User',
+              role: 'User',
+              date: new Date('2023-11-10').toISOString()
+            }
+          ],
+          visibleToPM: true,
+          visibleToPI: false,
+          visibleToFinance: false,
+          canBeReApproved: false,
+          createdAt: new Date('2023-11-10').toISOString()
+        },
+        {
+          id: 'PD-2023-002',
+          userId: 'user2',
+          userName: 'Test User',
+          fullName: 'Test User',
+          department: 'ACS',
+          departure: 'Addis Ababa',
+          destinationType: 'small',
+          transportedBy: 'car',
+          kms: 200,
+          paymentSource: 'ACS',
+          programManagerId: 'pm2',
+          programManagerName: 'Rediet',
+          programManagerDepartment: 'ACS',
+          assignedPI: 'pi2',
+          assignedPIName: 'Abiy',
+          travelType: 'overnight',
+          startDate: '2023-11-20',
+          endDate: '2023-11-22',
+          startTime: '09:00',
+          endTime: '16:00',
+          purpose: 'Client presentation and training',
+          amount: 7440,
+          days: 3,
+          rate: 2480,
+          status: 'Approved by PM',
+          statusHistory: [
+            {
+              status: 'Submitted',
+              by: 'Test User',
+              role: 'User',
+              date: new Date('2023-11-14').toISOString()
+            },
+            {
+              status: 'Approved by PM',
+              by: 'Rediet',
+              role: 'Project Manager',
+              date: new Date('2023-11-16').toISOString()
+            }
+          ],
+          visibleToPM: true,
+          visibleToPI: true,
+          visibleToFinance: false,
+          canBeReApproved: false,
+          createdAt: new Date('2023-11-14').toISOString()
+        },
+        {
+          id: 'PD-2023-003',
+          userId: 'user3',
+          userName: 'Sample User',
+          fullName: 'Sample User',
+          department: 'IKMC',
+          departure: 'Addis Ababa',
+          destinationType: 'addis',
+          transportedBy: 'bus',
+          kms: 0,
+          paymentSource: 'IKMC',
+          programManagerId: 'pm3',
+          programManagerName: 'Dorka',
+          programManagerDepartment: 'IKMC',
+          assignedPI: 'pi2',
+          assignedPIName: 'Abiy',
+          travelType: 'training',
+          startDate: '2023-11-25',
+          endDate: '2023-11-27',
+          startTime: '08:30',
+          endTime: '17:30',
+          purpose: 'Training workshop',
+          amount: 13020,
+          days: 3,
+          rate: 4340,
+          status: 'Approved by PI',
+          statusHistory: [
+            {
+              status: 'Submitted',
+              by: 'Sample User',
+              role: 'User',
+              date: new Date('2023-11-18').toISOString()
+            },
+            {
+              status: 'Approved by PM',
+              by: 'Dorka',
+              role: 'Project Manager',
+              date: new Date('2023-11-19').toISOString()
+            },
+            {
+              status: 'Approved by PI',
+              by: 'Abiy',
+              role: 'PI',
+              date: new Date('2023-11-20').toISOString()
+            }
+          ],
+          visibleToPM: true,
+          visibleToPI: true,
+          visibleToFinance: true,
+          canBeReApproved: false,
+          createdAt: new Date('2023-11-18').toISOString()
+        },
+        {
+          id: 'PD-2023-004',
+          userId: 'user4',
+          userName: 'Finance Test User',
+          fullName: 'Finance Test User',
+          department: 'Finance',
+          departure: 'Addis Ababa',
+          destinationType: 'big',
+          transportedBy: 'air',
+          kms: 300,
+          paymentSource: 'SLL360',
+          programManagerId: 'pm1',
+          programManagerName: 'Abebech',
+          programManagerDepartment: 'SLL360',
+          assignedPI: 'pi1',
+          assignedPIName: 'Birhan',
+          travelType: 'overnight',
+          startDate: '2023-12-01',
+          endDate: '2023-12-03',
+          startTime: '08:00',
+          endTime: '17:00',
+          purpose: 'Financial audit',
+          amount: 9300,
+          days: 3,
+          rate: 3100,
+          status: 'Approved',
+          statusHistory: [
+            {
+              status: 'Submitted',
+              by: 'Finance Test User',
+              role: 'User',
+              date: new Date('2023-11-28').toISOString()
+            },
+            {
+              status: 'Approved by PM',
+              by: 'Abebech',
+              role: 'Project Manager',
+              date: new Date('2023-11-29').toISOString()
+            },
+            {
+              status: 'Approved by PI',
+              by: 'Birhan',
+              role: 'PI',
+              date: new Date('2023-11-30').toISOString()
+            },
+            {
+              status: 'Approved',
+              by: 'Finance Officer',
+              role: 'Finance Officer',
+              date: new Date('2023-12-01').toISOString()
+            }
+          ],
+          visibleToPM: true,
+          visibleToPI: true,
+          visibleToFinance: true,
+          canBeReApproved: false,
+          createdAt: new Date('2023-11-28').toISOString()
+        },
+        {
+          id: 'PD-2023-005',
+          userId: 'user5',
+          userName: 'Rejected User',
+          fullName: 'Rejected User',
+          department: 'SLL360',
+          departure: 'Addis Ababa',
+          destinationType: 'small',
+          transportedBy: 'car',
+          kms: 150,
+          paymentSource: 'SLL360',
+          programManagerId: 'pm1',
+          programManagerName: 'Abebech',
+          programManagerDepartment: 'SLL360',
+          assignedPI: 'pi1',
+          assignedPIName: 'Birhan',
+          travelType: 'overnight',
+          startDate: '2023-12-05',
+          endDate: '2023-12-07',
+          startTime: '09:00',
+          endTime: '17:00',
+          purpose: 'Site evaluation',
+          amount: 7440,
+          days: 3,
+          rate: 2480,
+          status: 'Rejected by PM',
+          statusHistory: [
+            {
+              status: 'Submitted',
+              by: 'Rejected User',
+              role: 'User',
+              date: new Date('2023-12-03').toISOString()
+            },
+            {
+              status: 'Rejected by PM',
+              by: 'Abebech',
+              role: 'Project Manager',
+              date: new Date('2023-12-04').toISOString()
+            }
+          ],
+          visibleToPM: true,
+          visibleToPI: false,
+          visibleToFinance: false,
+          canBeReApproved: true,
+          rejectedBy: 'Abebech',
+          rejectedRole: 'Project Manager',
+          rejectedDate: new Date('2023-12-04').toISOString(),
+          createdAt: new Date('2023-12-03').toISOString()
+        },
+        {
+          id: 'PD-2023-006',
+          userId: 'user6',
+          userName: 'PI Rejected User',
+          fullName: 'PI Rejected User',
+          department: 'ACS',
+          departure: 'Addis Ababa',
+          destinationType: 'big',
+          transportedBy: 'air',
+          kms: 400,
+          paymentSource: 'ACS',
+          programManagerId: 'pm2',
+          programManagerName: 'Rediet',
+          programManagerDepartment: 'ACS',
+          assignedPI: 'pi2',
+          assignedPIName: 'Abiy',
+          travelType: 'overnight',
+          startDate: '2023-12-10',
+          endDate: '2023-12-12',
+          startTime: '08:00',
+          endTime: '17:00',
+          purpose: 'Research collaboration',
+          amount: 9300,
+          days: 3,
+          rate: 3100,
+          status: 'Rejected',
+          statusHistory: [
+            {
+              status: 'Submitted',
+              by: 'PI Rejected User',
+              role: 'User',
+              date: new Date('2023-12-08').toISOString()
+            },
+            {
+              status: 'Approved by PM',
+              by: 'Rediet',
+              role: 'Project Manager',
+              date: new Date('2023-12-09').toISOString()
+            },
+            {
+              status: 'Rejected',
+              by: 'Abiy',
+              role: 'PI',
+              date: new Date('2023-12-10').toISOString()
+            }
+          ],
+          visibleToPM: true,
+          visibleToPI: true,
+          visibleToFinance: false,
+          canBeReApproved: true,
+          rejectedBy: 'Abiy',
+          rejectedRole: 'PI',
+          rejectedDate: new Date('2023-12-10').toISOString(),
+          createdAt: new Date('2023-12-08').toISOString()
+        }
+      ];
+      
+      perDiemApplications = demoApplications;
+      localStorage.setItem('cis_perDiemApplications', JSON.stringify(perDiemApplications));
+    }
+
+    function showPage(pageId) {
+      document.getElementById('financialStatement').classList.add('hidden');
+      document.getElementById('officeMemoSection').classList.add('hidden');
+      closeApplicationModal();
+      
+      // Hide all main sections
+      document.querySelectorAll('main section').forEach(sec => {
+        if (sec.id !== 'financialStatement' && sec.id !== 'officeMemoSection') {
+          sec.classList.add('hidden');
+        }
+      });
+      
+      // Show the requested page
+      const pageElement = document.getElementById(pageId);
+      if (pageElement) {
+        pageElement.classList.remove('hidden');
+      }
+      
+      // Load data for specific pages
+      if (pageId === 'perDiemHistory') {
+        loadPerDiemHistory('all');
+      } else if (pageId === 'approvals') {
+        filterApprovals('pending');
+      } else if (pageId === 'perDiemForm') {
+        populatePerDiemForm();
+      }
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      
+      const name = document.getElementById('regName').value;
+      const email = document.getElementById('regEmail').value;
+      const password = document.getElementById('regPassword').value;
+      const role = document.getElementById('regRole').value;
+      const department = document.getElementById('regDepartment').value;
+      
+      // Check if user already exists
+      if (users.find(user => user.email === email)) {
+        showNotification('User with this email already exists!', 'error');
+        return;
+      }
+      
+      // Create new user
+      const newUser = {
+        id: Date.now().toString(),
+        name,
+        email,
+        password,
+        role,
+        department,
+        createdAt: new Date().toISOString()
+      };
+      
+      // Save user
+      users.push(newUser);
+      localStorage.setItem('cis_users', JSON.stringify(users));
+      
+      // Show success message
+      showNotification('Registration successful! You can now login.', 'success');
+      
+      // Reset form and redirect to login
+      document.getElementById('registerForm').reset();
+      showPage('login');
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      
+      const email = document.getElementById('loginEmail').value;
+      const password = document.getElementById('loginPassword').value;
+      
+      // Find user
+      const user = users.find(u => u.email === email && u.password === password);
+      
+      if (!user) {
+        showNotification('Invalid email or password!', 'error');
+        return;
+      }
+      
+      // Set current user
+      currentUser = user;
+      localStorage.setItem('cis_currentUser', JSON.stringify(currentUser));
+      
+      // Update UI
+      updateUIForLoggedInUser();
+      
+      // Show success message and redirect
+      showNotification('Login successful!', 'success');
+      
+      // Redirect based on role
+      if (currentUser.role === 'User') {
+        showPage('perDiemForm');
+      } else if (currentUser.role === 'Project Manager' || currentUser.role === 'PI' || currentUser.role === 'Finance Officer') {
+        showPage('approvals');
+      } else if (currentUser.role === 'Admin') {
+        showPage('admin');
+      }
+    }
+
+    function handleLogout() {
+      document.getElementById('financialStatement').classList.add('hidden');
+      document.getElementById('officeMemoSection').classList.add('hidden');
+      closeApplicationModal();
+      
+      currentUser = null;
+      localStorage.removeItem('cis_currentUser');
+      
+      // Update UI
+      updateUIForLoggedOutUser();
+      
+      // Show message and redirect
+      showNotification('You have been logged out.', 'info');
+      showPage('home');
+    }
+
+    function updateUIForLoggedInUser() {
+      document.getElementById('navLogin').classList.add('hidden');
+      document.getElementById('navRegister').classList.add('hidden');
+      document.getElementById('navPerDiemForm').classList.remove('hidden');
+      document.getElementById('navPerDiemHistory').classList.remove('hidden');
+      document.getElementById('navApprovals').classList.remove('hidden');
+      document.getElementById('navLogout').classList.remove('hidden');
+      
+      if (currentUser.role === 'Admin') {
+        document.getElementById('navAdmin').classList.remove('hidden');
+      } else {
+        document.getElementById('navAdmin').classList.add('hidden');
+      }
+      
+      document.getElementById('userInfo').classList.remove('hidden');
+      document.getElementById('userInfo').textContent = `Welcome, ${currentUser.name} (${currentUser.role})`;
+      
+      document.getElementById('homeButtons').classList.add('hidden');
+    }
+
+    function updateUIForLoggedOutUser() {
+      document.getElementById('navLogin').classList.remove('hidden');
+      document.getElementById('navRegister').classList.remove('hidden');
+      document.getElementById('navPerDiemForm').classList.add('hidden');
+      document.getElementById('navPerDiemHistory').classList.add('hidden');
+      document.getElementById('navApprovals').classList.add('hidden');
+      document.getElementById('navAdmin').classList.add('hidden');
+      document.getElementById('navLogout').classList.add('hidden');
+      
+      document.getElementById('userInfo').classList.add('hidden');
+      document.getElementById('homeButtons').classList.remove('hidden');
+    }
+
+    function populateProgramManagers() {
+      const programManagerSelect = document.getElementById('programManager');
+      if (!programManagerSelect) return;
+      
+      while (programManagerSelect.options.length > 1) {
+        programManagerSelect.remove(1);
+      }
+      
+      const projectManagers = users.filter(user => user.role === 'Project Manager' && user.department);
+      const uniqueProjectManagers = [];
+      const seenIds = new Set();
+      
+      projectManagers.forEach(pm => {
+        if (!seenIds.has(pm.id) && pm.department) {
+          seenIds.add(pm.id);
+          uniqueProjectManagers.push(pm);
+        }
+      });
+      
+      uniqueProjectManagers.forEach(pm => {
+        const option = document.createElement('option');
+        option.value = pm.id;
+        option.textContent = `${pm.name} - ${pm.department}`;
+        programManagerSelect.appendChild(option);
+      });
+    }
+
+    function populatePerDiemForm() {
+      if (!currentUser) return;
+      
+      document.getElementById('fullName').value = currentUser.name;
+      
+      if (currentUser.department) {
+        document.getElementById('department').value = currentUser.department;
+      }
+      
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('startDate').value = today;
+      
+      document.getElementById('startTime').value = '08:00';
+      document.getElementById('endTime').value = '17:00';
+    }
+
+    function handlePerDiemSubmit(e) {
+      e.preventDefault();
+      
+      if (!currentUser) {
+        showNotification('Please login to submit applications', 'error');
+        showPage('login');
+        return;
+      }
+      
+      const fullName = document.getElementById('fullName').value;
+      const department = document.getElementById('department').value;
+      const departure = document.getElementById('departure').value;
+      const destinationType = document.getElementById('destinationType').value;
+      const transportedBy = document.getElementById('transportedBy').value;
+      const kms = document.getElementById('kms').value;
+      const paymentSource = document.getElementById('paymentSource').value;
+      const programManagerId = document.getElementById('programManager').value;
+      const travelType = document.getElementById('travelType').value;
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+      const startTime = document.getElementById('startTime').value;
+      const endTime = document.getElementById('endTime').value;
+      const purpose = document.getElementById('purpose').value;
+      
+      if (new Date(endDate) < new Date(startDate)) {
+        showNotification('End date must be after start date!', 'error');
+        return;
+      }
+      
+      const rates = { small: 2480, big: 3100, addis: 4340 };
+      const days = Math.ceil((new Date(endDate) - new Date(startDate)) / (1000 * 60 * 60 * 24)) + 1;
+      const amount = days * (travelType === 'withinCity' ? rates[destinationType] / 5 : rates[destinationType]);
+      
+      const programManager = users.find(user => user.id === programManagerId);
+      
+      let assignedPI = principalInvestigators.find(pi => pi.department === 'General');
+      
+      if (programManager && programManager.name === 'Abebech' && programManager.department === 'SLL360') {
+        assignedPI = principalInvestigators.find(pi => pi.department === 'SLL360');
+      }
+      
+      const application = {
+        id: 'PD-' + Date.now().toString().slice(-6),
+        userId: currentUser.id,
+        userName: currentUser.name,
+        fullName,
+        department,
+        departure,
+        destinationType,
+        transportedBy,
+        kms: parseInt(kms) || 0,
+        paymentSource,
+        programManagerId,
+        programManagerName: programManager ? programManager.name : 'Unknown',
+        programManagerDepartment: programManager ? programManager.department : 'Unknown',
+        assignedPI: assignedPI ? assignedPI.id : 'pi2',
+        assignedPIName: assignedPI ? assignedPI.name : 'Abiy',
+        travelType,
+        startDate,
+        endDate,
+        startTime,
+        endTime,
+        purpose,
+        amount,
+        days,
+        rate: rates[destinationType],
+        status: 'Submitted',
+        statusHistory: [{
+          status: 'Submitted',
+          by: currentUser.name,
+          role: currentUser.role,
+          date: new Date().toISOString()
+        }],
+        visibleToPM: true,
+        visibleToPI: false,
+        visibleToFinance: false,
+        canBeReApproved: false,
+        createdAt: new Date().toISOString()
+      };
+      
+      perDiemApplications.push(application);
+      localStorage.setItem('cis_perDiemApplications', JSON.stringify(perDiemApplications));
+      
+      showNotification('Per Diem application submitted successfully!', 'success');
+      
+      document.getElementById('perDiemApplicationForm').reset();
+      populatePerDiemForm();
+      
+      showPage('perDiemHistory');
+    }
+
+    function filterApprovals(filterType) {
+      const approvalsBody = document.getElementById('approvalsBody');
+      if (!approvalsBody) return;
+      
+      document.getElementById('pendingBtn').className = filterType === 'pending' ? 
+        'text-sm bg-blue-600 text-white px-3 py-1 rounded' : 'text-sm bg-white border px-3 py-1 rounded';
+      document.getElementById('approvedBtn').className = filterType === 'approved' ? 
+        'text-sm bg-blue-600 text-white px-3 py-1 rounded' : 'text-sm bg-white border px-3 py-1 rounded';
+      document.getElementById('rejectedBtn').className = filterType === 'rejected' ? 
+        'text-sm bg-blue-600 text-white px-3 py-1 rounded' : 'text-sm bg-white border px-3 py-1 rounded';
+      document.getElementById('reApprovableBtn').className = filterType === 'reApprovable' ? 
+        'text-sm bg-blue-600 text-white px-3 py-1 rounded' : 'text-sm bg-white border px-3 py-1 rounded';
+      
+      approvalsBody.innerHTML = '';
+      
+      let applicationsToShow = [];
+      
+      if (currentUser.role === 'Admin' || currentUser.role === 'Finance Officer') {
+        applicationsToShow = perDiemApplications;
+      } else if (currentUser.role === 'Project Manager') {
+        applicationsToShow = perDiemApplications.filter(app => 
+          app.programManagerId === currentUser.id
+        );
+      } else if (currentUser.role === 'PI') {
+        applicationsToShow = perDiemApplications.filter(app => 
+          app.assignedPI === currentUser.id
+        );
+      } else {
+        applicationsToShow = perDiemApplications.filter(app => app.userId === currentUser.id);
+      }
+      
+      // Apply status filter
+      if (filterType === 'pending') {
+        if (currentUser.role === 'PI') {
+          applicationsToShow = applicationsToShow.filter(app => 
+            app.status === 'Approved by PM'
+          );
+        } else if (currentUser.role === 'Project Manager') {
+          applicationsToShow = applicationsToShow.filter(app => app.status === 'Submitted');
+        } else if (currentUser.role === 'Finance Officer') {
+          applicationsToShow = applicationsToShow.filter(app => 
+            app.status === 'Approved by PI'
+          );
+        } else if (currentUser.role === 'Admin') {
+          applicationsToShow = applicationsToShow.filter(app => 
+            app.status === 'Submitted' || 
+            app.status === 'Approved by PM' || 
+            app.status === 'Approved by PI'
+          );
+        } else {
+          applicationsToShow = applicationsToShow.filter(app => 
+            (app.status === 'Submitted' || 
+            app.status === 'Approved by PM' || 
+            app.status === 'Approved by PI') &&
+            app.userId === currentUser.id
+          );
+        }
+      } else if (filterType === 'approved') {
+        if (currentUser.role === 'Project Manager') {
+          applicationsToShow = applicationsToShow.filter(app => 
+            app.status === 'Approved by PM' || 
+            app.status === 'Approved by PI' || 
+            app.status === 'Approved'
+          );
+        } else if (currentUser.role === 'PI') {
+          applicationsToShow = applicationsToShow.filter(app => 
+            (app.status === 'Approved by PI' || 
+            app.status === 'Approved') && 
+            app.assignedPI === currentUser.id
+          );
+        } else if (currentUser.role === 'Finance Officer' || currentUser.role === 'Admin') {
+          applicationsToShow = applicationsToShow.filter(app => app.status === 'Approved');
+        } else {
+          applicationsToShow = applicationsToShow.filter(app => 
+            app.status === 'Approved' && app.userId === currentUser.id
+          );
+        }
+      } else if (filterType === 'rejected') {
+        if (currentUser.role === 'Project Manager') {
+          applicationsToShow = applicationsToShow.filter(app => 
+            app.status === 'Rejected by PM' || 
+            app.status === 'Rejected'
+          );
+        } else if (currentUser.role === 'PI') {
+          applicationsToShow = applicationsToShow.filter(app => 
+            app.status === 'Rejected' && 
+            app.assignedPI === currentUser.id
+          );
+        } else if (currentUser.role === 'Finance Officer' || currentUser.role === 'Admin') {
+          applicationsToShow = applicationsToShow.filter(app => app.status.includes('Rejected'));
+        } else {
+          applicationsToShow = applicationsToShow.filter(app => 
+            app.status.includes('Rejected') && app.userId === currentUser.id
+          );
+        }
+      } else if (filterType === 'reApprovable') {
+        // NEW: Show applications that can be re-approved by the current user
+        if (currentUser.role === 'PI') {
+          applicationsToShow = applicationsToShow.filter(app => 
+            app.status === 'Rejected by PM' && 
+            app.assignedPI === currentUser.id &&
+            app.canBeReApproved === true
+          );
+        } else if (currentUser.role === 'Finance Officer') {
+          applicationsToShow = applicationsToShow.filter(app => 
+            app.status === 'Rejected' && 
+            app.canBeReApproved === true
+          );
+        } else if (currentUser.role === 'Admin') {
+          applicationsToShow = applicationsToShow.filter(app => 
+            (app.status === 'Rejected by PM' || app.status === 'Rejected') &&
+            app.canBeReApproved === true
+          );
+        } else {
+          applicationsToShow = applicationsToShow.filter(app => 
+            app.status.includes('Rejected') && 
+            app.canBeReApproved === true &&
+            app.userId === currentUser.id
+          );
+        }
+      }
+      
+      if (applicationsToShow.length === 0) {
+        const noApplicationsRow = document.createElement('tr');
+        noApplicationsRow.innerHTML = `
+          <td colspan="8" class="py-8 text-center text-gray-500">
+            <div class="flex flex-col items-center justify-center">
+              <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <p class="text-lg font-medium">No ${filterType} applications found</p>
+              <p class="text-sm mt-1">${getNoApplicationsMessage(currentUser.role, filterType)}</p>
+            </div>
+          </td>
+        `;
+        approvalsBody.appendChild(noApplicationsRow);
+        return;
+      }
+      
+      applicationsToShow.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      applicationsToShow.forEach(application => {
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-blue-50';
+        
+        const statusClass = getStatusClass(application.status);
+        
+        const showActions = canTakeAction(application, filterType);
+        const actionButtons = showActions ? getActionButtons(application, filterType) : '';
+        
+        row.innerHTML = `
+          <td class="py-3 px-4 font-medium">${application.id}</td>
+          <td class="py-3 px-4">${application.userName}</td>
+          <td class="py-3 px-4">${application.department}</td>
+          <td class="py-3 px-4">${getDestinationTypeName(application.destinationType)}</td>
+          <td class="py-3 px-4">${formatDate(application.startDate)} to ${formatDate(application.endDate)}</td>
+          <td class="py-3 px-4">${application.amount.toLocaleString()} ETB</td>
+          <td class="py-3 px-4">
+            <span class="status-badge ${statusClass}">${application.status}</span>
+            ${application.canBeReApproved ? '<span class="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Re-approvable</span>' : ''}
+          </td>
+          <td class="py-3 px-4">
+            <button onclick="viewApplicationDetails('${application.id}')" class="text-blue-600 hover:underline mr-2">Review</button>
+            ${actionButtons}
+            ${(currentUser.role === 'Finance Officer' && application.status === 'Approved') ? 
+              `<button onclick="generateFinancialStatement('${application.id}')" class="text-green-600 hover:underline ml-2">Statement</button>` : ''}
+          </td>
+        `;
+        
+        approvalsBody.appendChild(row);
+      });
+    }
+
+    function getNoApplicationsMessage(role, filterType) {
+      if (role === 'PI' && filterType === 'pending') {
+        return "Applications approved by Project Managers will appear here.";
+      } else if (role === 'Project Manager' && filterType === 'pending') {
+        return "New applications submitted by users will appear here.";
+      } else if (role === 'Finance Officer' && filterType === 'pending') {
+        return "Applications approved by PIs will appear here for final approval.";
+      } else if (role === 'Admin' && filterType === 'pending') {
+        return "You can view pending applications but cannot approve or reject them.";
+      } else if (role === 'User' && filterType === 'pending') {
+        return "Your pending applications will appear here.";
+      } else if (role === 'User') {
+        return "Your applications matching this filter will appear here.";
+      } else if (filterType === 'reApprovable') {
+        if (role === 'PI') {
+          return "Applications rejected by Project Managers that you can re-approve will appear here.";
+        } else if (role === 'Finance Officer') {
+          return "Applications rejected by PIs that you can re-approve will appear here.";
+        } else {
+          return "Applications that can be re-approved will appear here.";
+        }
+      }
+      return "There are no applications matching your current filter.";
+    }
+
+    function getActionButtons(application, filterType) {
+      if (filterType === 'reApprovable') {
+        // Special buttons for re-approval
+        if (currentUser.role === 'PI' && application.status === 'Rejected by PM') {
+          return `
+            <button onclick="reApproveApplication('${application.id}', 'Approved by PM')" class="text-green-600 hover:underline mr-2">Re-approve</button>
+          `;
+        } else if (currentUser.role === 'Finance Officer' && application.status === 'Rejected') {
+          return `
+            <button onclick="reApproveApplication('${application.id}', 'Approved by PI')" class="text-green-600 hover:underline mr-2">Re-approve</button>
+          `;
+        }
+      }
+      
+      if (currentUser.role === 'Project Manager' && application.status === 'Submitted') {
+        return `
+          <button onclick="approveApplication('${application.id}', 'Approved by PM')" class="text-green-600 hover:underline mr-2">Approve</button>
+          <button onclick="rejectApplication('${application.id}', 'Rejected by PM')" class="text-red-600 hover:underline">Reject</button>
+        `;
+      } else if (currentUser.role === 'PI' && application.status === 'Approved by PM') {
+        return `
+          <button onclick="approveApplication('${application.id}', 'Approved by PI')" class="text-green-600 hover:underline mr-2">Approve</button>
+          <button onclick="rejectApplication('${application.id}', 'Rejected')" class="text-red-600 hover:underline">Reject</button>
+        `;
+      } else if (currentUser.role === 'Finance Officer' && application.status === 'Approved by PI') {
+        return `
+          <button onclick="approveApplication('${application.id}', 'Approved')" class="text-green-600 hover:underline mr-2">Approve</button>
+          <button onclick="rejectApplication('${application.id}', 'Rejected')" class="text-red-600 hover:underline">Reject</button>
+        `;
+      }
+      return '';
+    }
+
+    function canTakeAction(application, filterType) {
+      if (currentUser.role === 'Admin') return false;
+      
+      if (filterType === 'reApprovable') {
+        // Special logic for re-approval
+        if (currentUser.role === 'PI') {
+          return application.status === 'Rejected by PM' && 
+                 application.assignedPI === currentUser.id &&
+                 application.canBeReApproved === true;
+        }
+        
+        if (currentUser.role === 'Finance Officer') {
+          return application.status === 'Rejected' && 
+                 application.canBeReApproved === true;
+        }
+        
+        return false;
+      }
+      
+      if (currentUser.role === 'Project Manager') {
+        return application.status === 'Submitted' && 
+               application.programManagerId === currentUser.id;
+      }
+      
+      if (currentUser.role === 'PI') {
+        return application.status === 'Approved by PM' && 
+               application.assignedPI === currentUser.id;
+      }
+      
+      if (currentUser.role === 'Finance Officer') {
+        return application.status === 'Approved by PI';
+      }
+      
+      return false;
+    }
+
+    function viewApplicationDetails(applicationId) {
+      const application = perDiemApplications.find(app => app.id === applicationId);
+      if (!application) {
+        showNotification('Application not found', 'error');
+        return;
+      }
+      
+      const detailsContent = document.getElementById('applicationDetailsContent');
+      
+      let reApproveButton = '';
+      if (application.canBeReApproved) {
+        if (currentUser.role === 'PI' && application.status === 'Rejected by PM') {
+          reApproveButton = `<button onclick="reApproveApplication('${application.id}', 'Approved by PM')" class="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700">Re-approve as PI</button>`;
+        } else if (currentUser.role === 'Finance Officer' && application.status === 'Rejected') {
+          reApproveButton = `<button onclick="reApproveApplication('${application.id}', 'Approved by PI')" class="px-4 py-2 bg-yellow-600 text-white rounded hover:bg-yellow-700">Re-approve as Finance</button>`;
+        }
+      }
+      
+      detailsContent.innerHTML = `
+        <div class="space-y-6">
+          ${application.canBeReApproved ? `
+            <div class="bg-yellow-50 p-4 rounded border border-yellow-200">
+              <div class="flex items-center">
+                <svg class="w-6 h-6 text-yellow-600 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <h4 class="font-bold text-yellow-700">This application can be re-approved</h4>
+              </div>
+              <p class="text-sm text-yellow-600 mt-2">
+                This application was rejected by ${application.rejectedBy || 'someone'} (${application.rejectedRole || 'unknown role'}) on ${formatDate(application.rejectedDate || application.createdAt)}.
+                You can re-approve it if you believe the rejection was made in error.
+              </p>
+            </div>
+          ` : ''}
+          
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-blue-50 p-4 rounded">
+              <h4 class="font-bold text-blue-700 mb-2">Application Information</h4>
+              <p><strong>ID:</strong> ${application.id}</p>
+              <p><strong>Applicant:</strong> ${application.fullName}</p>
+              <p><strong>Department:</strong> ${application.department}</p>
+              <p><strong>Submitted:</strong> ${formatDateTime(application.createdAt)}</p>
+            </div>
+            <div class="bg-green-50 p-4 rounded">
+              <h4 class="font-bold text-green-700 mb-2">Financial Information</h4>
+              <p><strong>Amount:</strong> ${application.amount.toLocaleString()} ETB</p>
+              <p><strong>Days:</strong> ${application.days}</p>
+              <p><strong>Rate:</strong> ${application.rate.toLocaleString()} ETB/day</p>
+              <p><strong>Payment Source:</strong> ${application.paymentSource}</p>
+            </div>
+          </div>
+          
+          <div class="bg-gray-50 p-4 rounded">
+            <h4 class="font-bold text-gray-700 mb-2">Travel Details</h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p><strong>Departure:</strong> ${application.departure}</p>
+                <p><strong>Destination:</strong> ${getDestinationTypeName(application.destinationType)}</p>
+                <p><strong>Transport:</strong> ${application.transportedBy}</p>
+                <p><strong>Distance:</strong> ${application.kms || 0} Kms</p>
+              </div>
+              <div>
+                <p><strong>Travel Dates:</strong> ${formatDate(application.startDate)} to ${formatDate(application.endDate)}</p>
+                <p><strong>Travel Times:</strong> ${application.startTime} to ${application.endTime}</p>
+                <p><strong>Travel Type:</strong> ${application.travelType}</p>
+              </div>
+            </div>
+            <p class="mt-3"><strong>Purpose:</strong> ${application.purpose}</p>
+          </div>
+          
+          <div class="bg-purple-50 p-4 rounded">
+            <h4 class="font-bold text-purple-700 mb-2">Approval Information</h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <p><strong>Program Manager:</strong> ${application.programManagerName}</p>
+                <p><strong>PM Department:</strong> ${application.programManagerDepartment}</p>
+              </div>
+              <div>
+                <p><strong>Assigned PI:</strong> ${application.assignedPIName}</p>
+                <p><strong>Current Status:</strong> <span class="status-badge ${getStatusClass(application.status)}">${application.status}</span></p>
+              </div>
+            </div>
+          </div>
+          
+          ${application.statusHistory && application.statusHistory.length > 0 ? `
+            <div class="bg-yellow-50 p-4 rounded">
+              <h4 class="font-bold text-yellow-700 mb-2">Approval History</h4>
+              <table class="w-full border-collapse">
+                <thead>
+                  <tr class="bg-yellow-100">
+                    <th class="py-2 px-3 text-left">Status</th>
+                    <th class="py-2 px-3 text-left">Approved By</th>
+                    <th class="py-2 px-3 text-left">Role</th>
+                    <th class="py-2 px-3 text-left">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${application.statusHistory.map(history => `
+                    <tr class="border-b">
+                      <td class="py-2 px-3">${history.status}</td>
+                      <td class="py-2 px-3">${history.by}</td>
+                      <td class="py-2 px-3">${history.role}</td>
+                      <td class="py-2 px-3">${formatDateTime(history.date)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          ` : ''}
+          
+          <div class="flex justify-end gap-3 mt-6">
+            <button onclick="closeApplicationModal()" class="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50">Close</button>
+            ${reApproveButton}
+            ${canTakeAction(application, 'pending') ? `
+              <button onclick="approveApplication('${application.id}', '${currentUser.role === 'Project Manager' ? 'Approved by PM' : currentUser.role === 'PI' ? 'Approved by PI' : 'Approved'}')" class="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Approve</button>
+              <button onclick="rejectApplication('${application.id}', '${currentUser.role === 'Project Manager' ? 'Rejected by PM' : 'Rejected'}')" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Reject</button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+      
+      document.getElementById('applicationDetailsModal').style.display = 'block';
+    }
+
+    // NEW: Re-approve Application Function
+    function reApproveApplication(applicationId, newStatus) {
+      const application = perDiemApplications.find(app => app.id === applicationId);
+      if (!application) return;
+      
+      if (!application.canBeReApproved) {
+        showNotification('This application cannot be re-approved.', 'error');
+        return;
+      }
+      
+      if (currentUser.role === 'PI' && application.status !== 'Rejected by PM') {
+        showNotification('Only applications rejected by Project Managers can be re-approved by PI.', 'error');
+        return;
+      }
+      
+      if (currentUser.role === 'Finance Officer' && application.status !== 'Rejected') {
+        showNotification('Only applications rejected by PI can be re-approved by Finance.', 'error');
+        return;
+      }
+      
+      // Update application status
+      let updatedStatus = newStatus;
+      let successMessage = '';
+      
+      if (currentUser.role === 'PI') {
+        // PI re-approving an application rejected by PM
+        application.status = 'Approved by PM';
+        application.statusHistory.push({
+          status: 'Re-approved by PI (was: Rejected by PM)',
+          by: currentUser.name,
+          role: currentUser.role,
+          date: new Date().toISOString(),
+          note: 'Re-approved after previous rejection'
+        });
+        
+        // Then automatically approve by PI
+        application.status = 'Approved by PI';
+        application.statusHistory.push({
+          status: 'Approved by PI',
+          by: currentUser.name,
+          role: currentUser.role,
+          date: new Date().toISOString()
+        });
+        
+        application.visibleToFinance = true;
+        application.canBeReApproved = false;
+        successMessage = 'Application re-approved by PI! Sent to Finance for final approval.';
+      } else if (currentUser.role === 'Finance Officer') {
+        // Finance re-approving an application rejected by PI
+        application.status = 'Approved by PI';
+        application.statusHistory.push({
+          status: 'Re-approved by Finance (was: Rejected)',
+          by: currentUser.name,
+          role: currentUser.role,
+          date: new Date().toISOString(),
+          note: 'Re-approved after previous rejection'
+        });
+        
+        // Then automatically approve by Finance
+        application.status = 'Approved';
+        application.statusHistory.push({
+          status: 'Approved',
+          by: currentUser.name,
+          role: currentUser.role,
+          date: new Date().toISOString()
+        });
+        
+        application.canBeReApproved = false;
+        successMessage = 'Application re-approved by Finance! Finance can now print financial statement.';
+      }
+      
+      // Save updated applications
+      localStorage.setItem('cis_perDiemApplications', JSON.stringify(perDiemApplications));
+      
+      // Close modal if open
+      closeApplicationModal();
+      
+      showNotification(successMessage, 'success');
+      
+      // Reload approvals
+      setTimeout(() => {
+        filterApprovals('reApprovable');
+      }, 500);
+    }
+
+    function approveApplication(applicationId, newStatus) {
+      const application = perDiemApplications.find(app => app.id === applicationId);
+      if (!application) return;
+      
+      if (!canTakeAction(application, 'pending')) {
+        showNotification('You are not authorized to approve this application.', 'error');
+        return;
+      }
+      
+      // Update application status
+      application.status = newStatus;
+      application.statusHistory = application.statusHistory || [];
+      application.statusHistory.push({
+        status: newStatus,
+        by: currentUser.name,
+        role: currentUser.role,
+        date: new Date().toISOString()
+      });
+      
+      // Update visibility based on approval stage
+      if (newStatus === 'Approved by PM') {
+        application.visibleToPI = true; // Make visible to PI
+        showNotification('Application approved! Sent to PI for review.', 'success');
+      } else if (newStatus === 'Approved by PI') {
+        application.visibleToFinance = true; // Make visible to Finance
+        showNotification('Application approved! Sent to Finance for final approval.', 'success');
+      } else if (newStatus === 'Approved') {
+        showNotification('Application approved! Finance can now print financial statement.', 'success');
+      }
+      
+      // Save updated applications
+      localStorage.setItem('cis_perDiemApplications', JSON.stringify(perDiemApplications));
+      
+      // Close modal if open
+      closeApplicationModal();
+      
+      // Reload approvals
+      setTimeout(() => {
+        filterApprovals('pending');
+      }, 500);
+    }
+
+    function rejectApplication(applicationId, newStatus) {
+      const application = perDiemApplications.find(app => app.id === applicationId);
+      if (!application) return;
+      
+      if (!canTakeAction(application, 'pending')) {
+        showNotification('You are not authorized to reject this application.', 'error');
+        return;
+      }
+      
+      let finalStatus = newStatus;
+      if ((currentUser.role === 'PI' || currentUser.role === 'Finance Officer') && newStatus !== 'Rejected by PM') {
+        finalStatus = 'Rejected';
+      }
+      
+      application.status = finalStatus;
+      application.statusHistory = application.statusHistory || [];
+      application.statusHistory.push({
+        status: finalStatus,
+        by: currentUser.name,
+        role: currentUser.role,
+        date: new Date().toISOString()
+      });
+      
+      // Mark application as re-approvable
+      application.canBeReApproved = true;
+      application.rejectedBy = currentUser.name;
+      application.rejectedRole = currentUser.role;
+      application.rejectedDate = new Date().toISOString();
+      
+      // Update visibility
+      if (finalStatus === 'Rejected by PM') {
+        application.visibleToPI = false;
+        application.visibleToFinance = false;
+      } else if (finalStatus === 'Rejected') {
+        application.visibleToFinance = false;
+      }
+      
+      // Notify the user that their application was rejected
+      const userMessage = `Your per diem application ${application.id} has been ${finalStatus.toLowerCase()} by ${currentUser.name} (${currentUser.role}).`;
+      
+      // Store notification for the user
+      const userNotifications = JSON.parse(localStorage.getItem('cis_notifications')) || [];
+      userNotifications.push({
+        userId: application.userId,
+        message: userMessage,
+        type: 'rejected',
+        applicationId: application.id,
+        date: new Date().toISOString(),
+        read: false
+      });
+      localStorage.setItem('cis_notifications', JSON.stringify(userNotifications));
+      
+      localStorage.setItem('cis_perDiemApplications', JSON.stringify(perDiemApplications));
+      
+      closeApplicationModal();
+      
+      showNotification(`Application ${finalStatus.toLowerCase()} successfully! User has been notified.`, 'success');
+      
+      setTimeout(() => {
+        filterApprovals('pending');
+      }, 500);
+    }
+
+    function generateFinancialStatement(applicationId) {
+      if (currentUser.role !== 'Finance Officer' && currentUser.role !== 'Admin') {
+        showNotification('Only Finance Officers and Admins can generate financial statements.', 'error');
+        return;
+      }
+      
+      const application = perDiemApplications.find(app => app.id === applicationId);
+      if (!application) {
+        showNotification('Application not found', 'error');
+        return;
+      }
+      
+      if (application.status !== 'Approved') {
+        showNotification('Financial statement can only be generated for approved applications.', 'error');
+        return;
+      }
+      
+      let statement = financialStatements.find(st => st.applicationId === applicationId);
+      
+      if (!statement) {
+        statement = {
+          id: 'FS-' + Date.now().toString().slice(-6),
+          applicationId: application.id,
+          issueDate: new Date().toISOString().split('T')[0],
+          paymentDate: new Date().toISOString().split('T')[0],
+          applicantName: application.fullName,
+          department: application.department,
+          paymentSource: application.paymentSource,
+          programManager: application.programManagerName,
+          pi: application.assignedPIName,
+          departure: application.departure,
+          destination: getDestinationTypeName(application.destinationType),
+          transport: application.transportedBy,
+          travelDates: `${formatDate(application.startDate)} to ${formatDate(application.endDate)}`,
+          travelTimes: `${application.startTime} to ${application.endTime}`,
+          travelType: application.travelType,
+          purpose: application.purpose,
+          days: application.days,
+          rate: application.rate,
+          amount: application.amount,
+          kms: application.kms || 0,
+          statusHistory: application.statusHistory || [],
+          createdAt: new Date().toISOString()
+        };
+        
+        financialStatements.push(statement);
+        localStorage.setItem('cis_financialStatements', JSON.stringify(financialStatements));
+        
+        showNotification('Financial statement generated successfully!', 'success');
+      } else {
+        showNotification('Financial statement loaded.', 'info');
+      }
+      
+      showFinancialStatement(statement, application);
+    }
+
+    function showFinancialStatement(statement, application) {
+      document.getElementById('printStatementId').textContent = statement.id;
+      document.getElementById('printApplicationId').textContent = statement.applicationId;
+      document.getElementById('printIssueDate').textContent = formatDate(statement.issueDate);
+      document.getElementById('printPaymentDate').textContent = formatDate(statement.paymentDate);
+      document.getElementById('printApplicantName').textContent = statement.applicantName;
+      document.getElementById('printDepartment').textContent = statement.department;
+      document.getElementById('printPaymentSource').textContent = statement.paymentSource;
+      document.getElementById('printProgramManager').textContent = statement.programManager;
+      document.getElementById('printPI').textContent = statement.pi;
+      document.getElementById('printDeparture').textContent = statement.departure;
+      document.getElementById('printDestination').textContent = statement.destination;
+      document.getElementById('printTransport').textContent = statement.transport.charAt(0).toUpperCase() + statement.transport.slice(1);
+      document.getElementById('printTravelDates').textContent = statement.travelDates;
+      document.getElementById('printTravelTimes').textContent = statement.travelTimes;
+      document.getElementById('printTravelType').textContent = statement.travelType.charAt(0).toUpperCase() + statement.travelType.slice(1);
+      document.getElementById('printPurpose').textContent = statement.purpose;
+      document.getElementById('printDistance').textContent = statement.kms;
+      document.getElementById('printDays').textContent = statement.days;
+      document.getElementById('printRate').textContent = statement.rate.toLocaleString();
+      document.getElementById('printAmount').textContent = statement.amount.toLocaleString();
+      
+      const transportAmount = statement.kms > 0 ? statement.kms * 5 : 0;
+      document.getElementById('printTransportAmount').textContent = transportAmount.toLocaleString();
+      
+      const otherAmount = statement.travelType === 'training' ? 500 : 0;
+      document.getElementById('printOtherAmount').textContent = otherAmount.toLocaleString();
+      
+      const totalAmount = statement.amount + transportAmount + otherAmount;
+      document.getElementById('printTotalAmount').textContent = totalAmount.toLocaleString() + ' ETB';
+      
+      document.getElementById('printAmountInWords').textContent = convertNumberToWords(totalAmount) + ' Ethiopian Birr';
+      
+      const approvalHistoryBody = document.getElementById('printApprovalHistory');
+      approvalHistoryBody.innerHTML = '';
+      
+      if (statement.statusHistory && statement.statusHistory.length > 0) {
+        statement.statusHistory.forEach(history => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${history.status}</td>
+            <td>${history.by}</td>
+            <td>${history.role}</td>
+            <td>${formatDate(history.date)}</td>
+          `;
+          approvalHistoryBody.appendChild(row);
+        });
+      } else if (application && application.statusHistory) {
+        application.statusHistory.forEach(history => {
+          const row = document.createElement('tr');
+          row.innerHTML = `
+            <td>${history.status}</td>
+            <td>${history.by}</td>
+            <td>${history.role}</td>
+            <td>${formatDate(history.date)}</td>
+          `;
+          approvalHistoryBody.appendChild(row);
+        });
+      }
+      
+      document.querySelectorAll('main section').forEach(sec => {
+        if (sec.id !== 'financialStatement') {
+          sec.classList.add('hidden');
+        }
+      });
+      
+      document.getElementById('financialStatement').classList.remove('hidden');
+    }
+
+    function convertNumberToWords(num) {
+      const ones = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine'];
+      const teens = ['Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+      const tens = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+      
+      if (num === 0) return 'Zero';
+      
+      let words = '';
+      
+      if (num >= 1000) {
+        words += convertNumberToWords(Math.floor(num / 1000)) + ' Thousand ';
+        num %= 1000;
+      }
+      
+      if (num >= 100) {
+        words += ones[Math.floor(num / 100)] + ' Hundred ';
+        num %= 100;
+      }
+      
+      if (num >= 20) {
+        words += tens[Math.floor(num / 10)] + ' ';
+        num %= 10;
+      } else if (num >= 10) {
+        words += teens[num - 10] + ' ';
+        num = 0;
+      }
+      
+      if (num > 0) {
+        words += ones[num] + ' ';
+      }
+      
+      return words.trim() + ' Birr';
+    }
+
+    function hideFinancialStatement() {
+      document.getElementById('financialStatement').classList.add('hidden');
+      if (currentUser.role === 'Finance Officer') {
+        showPage('approvals');
+      } else {
+        showPage('perDiemHistory');
+      }
+    }
+
+    function closeApplicationModal() {
+      document.getElementById('applicationDetailsModal').style.display = 'none';
+    }
+
+    function getStatusClass(status) {
+      if (status.includes('Approved')) return 'status-approved';
+      if (status.includes('Rejected')) return 'status-rejected';
+      if (status === 'Submitted') return 'status-pending';
+      return 'status-pending';
+    }
+
+    function getDestinationTypeName(type) {
+      const types = {
+        small: 'Small City',
+        big: 'Big City',
+        addis: 'Addis Ababa'
+      };
+      return types[type] || type;
+    }
+
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric'
+      });
+    }
+    
+    function formatDateTime(dateTimeString) {
+      if (!dateTimeString) return 'N/A';
+      const date = new Date(dateTimeString);
+      return date.toLocaleString('en-GB', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+
+    function showNotification(message, type) {
+      const existingNotifications = document.querySelectorAll('.notification');
+      existingNotifications.forEach(notification => notification.remove());
+      
+      const notification = document.createElement('div');
+      notification.className = `notification ${type}`;
+      notification.textContent = message;
+      
+      document.body.appendChild(notification);
+      
+      setTimeout(() => {
+        notification.style.opacity = '0';
+        setTimeout(() => {
+          if (notification.parentNode) {
+            notification.parentNode.removeChild(notification);
+          }
+        }, 300);
+      }, 3000);
+    }
+
+    // ==================== PER DIEM HISTORY FUNCTIONS ====================
+
+    function loadPerDiemHistory(filterType) {
+      const historyBody = document.getElementById('perDiemHistoryBody');
+      if (!historyBody) return;
+      
+      historyBody.innerHTML = '';
+      
+      let applicationsToShow = [];
+      
+      if (currentUser) {
+        if (currentUser.role === 'Admin' || currentUser.role === 'Finance Officer') {
+          applicationsToShow = perDiemApplications;
+        } else {
+          applicationsToShow = perDiemApplications.filter(app => app.userId === currentUser.id);
+        }
+      } else {
+        applicationsToShow = [];
+      }
+      
+      // Apply filter
+      if (filterType === 'pending') {
+        applicationsToShow = applicationsToShow.filter(app => 
+          app.status === 'Submitted' || 
+          app.status === 'Approved by PM' || 
+          app.status === 'Approved by PI'
+        );
+      } else if (filterType === 'approved') {
+        applicationsToShow = applicationsToShow.filter(app => app.status === 'Approved');
+      } else if (filterType === 'rejected') {
+        applicationsToShow = applicationsToShow.filter(app => app.status.includes('Rejected'));
+      }
+      // 'all' shows everything
+      
+      if (applicationsToShow.length === 0) {
+        const noApplicationsRow = document.createElement('tr');
+        noApplicationsRow.innerHTML = `
+          <td colspan="6" class="py-8 text-center text-gray-500">
+            <div class="flex flex-col items-center justify-center">
+              <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <p class="text-lg font-medium">No per diem applications found</p>
+              <p class="text-sm mt-1">You haven't submitted any applications yet.</p>
+            </div>
+          </td>
+        `;
+        historyBody.appendChild(noApplicationsRow);
+        return;
+      }
+      
+      applicationsToShow.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      applicationsToShow.forEach(application => {
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-blue-50';
+        
+        const statusClass = getStatusClass(application.status);
+        
+        row.innerHTML = `
+          <td class="py-3 px-4 font-medium">${application.id}</td>
+          <td class="py-3 px-4">${getDestinationTypeName(application.destinationType)}</td>
+          <td class="py-3 px-4">${formatDate(application.startDate)} to ${formatDate(application.endDate)}</td>
+          <td class="py-3 px-4">${application.amount.toLocaleString()} ETB</td>
+          <td class="py-3 px-4">
+            <span class="status-badge ${statusClass}">${application.status}</span>
+            ${application.canBeReApproved ? '<span class="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Re-approvable</span>' : ''}
+          </td>
+          <td class="py-3 px-4">
+            <button onclick="viewApplicationDetails('${application.id}')" class="text-blue-600 hover:underline mr-2">View</button>
+            ${application.status === 'Approved' ? 
+              `<button onclick="viewFinancialStatement('${application.id}')" class="text-green-600 hover:underline">Statement</button>` : ''}
+          </td>
+        `;
+        
+        historyBody.appendChild(row);
+      });
+    }
+
+    function filterPerDiemHistory(filterType) {
+      loadPerDiemHistory(filterType);
+    }
+
+    function exportPerDiemHistory() {
+      if (!currentUser) {
+        showNotification('Please login to export data', 'error');
+        return;
+      }
+      
+      let userApplications = perDiemApplications;
+      if (currentUser.role !== 'Admin') {
+        userApplications = perDiemApplications.filter(app => app.userId === currentUser.id);
+      }
+      
+      if (userApplications.length === 0) {
+        showNotification('No applications to export', 'warning');
+        return;
+      }
+      
+      // Create CSV content
+      const headers = ['ID', 'Applicant', 'Department', 'Destination', 'Start Date', 'End Date', 'Amount', 'Status', 'Re-approvable'];
+      const csvRows = [];
+      
+      csvRows.push(headers.join(','));
+      
+      userApplications.forEach(app => {
+        const row = [
+          app.id,
+          app.fullName,
+          app.department,
+          getDestinationTypeName(app.destinationType),
+          formatDate(app.startDate),
+          formatDate(app.endDate),
+          app.amount,
+          app.status,
+          app.canBeReApproved ? 'Yes' : 'No'
+        ];
+        csvRows.push(row.map(cell => `"${cell}"`).join(','));
+      });
+      
+      const csvContent = csvRows.join('\n');
+      
+      // Download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `per_diem_history_${currentUser.name}_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showNotification(`Exported ${userApplications.length} applications to CSV`, 'success');
+    }
+
+    function viewFinancialStatement(applicationId) {
+      const application = perDiemApplications.find(app => app.id === applicationId);
+      if (!application) {
+        showNotification('Application not found', 'error');
+        return;
+      }
+      
+      if (application.status !== 'Approved') {
+        showNotification('Financial statement is only available for approved applications', 'warning');
+        return;
+      }
+      
+      generateFinancialStatement(applicationId);
+    }
+
+    // ==================== ADMIN DASHBOARD FUNCTIONS ====================
+
+    function showAdminSection(sectionId) {
+      // Hide all admin sections
+      document.querySelectorAll('.admin-section').forEach(section => {
+        section.classList.add('hidden');
+      });
+      
+      // Show selected section
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.classList.remove('hidden');
+      }
+      
+      // Update button styles
+      document.querySelectorAll('#admin button[id$="Btn"]').forEach(btn => {
+        btn.classList.remove('bg-blue-600', 'text-white');
+        btn.classList.add('bg-white', 'border', 'border-blue-600', 'text-blue-600');
+      });
+      
+      const activeBtn = document.getElementById(`${sectionId}Btn`);
+      if (activeBtn) {
+        activeBtn.classList.remove('bg-white', 'border', 'border-blue-600', 'text-blue-600');
+        activeBtn.classList.add('bg-blue-600', 'text-white');
+      }
+      
+      // Load section data
+      if (sectionId === 'userManagement') {
+        loadUserManagement();
+      } else if (sectionId === 'perDiemManagement') {
+        loadPerDiemManagement();
+      } else if (sectionId === 'financeManagement') {
+        loadFinanceManagement();
+      } else if (sectionId === 'officeMemo') {
+        loadOfficeMemoManagement();
+      }
+    }
+
+    function refreshAdminData() {
+      const activeSection = document.querySelector('.admin-section:not(.hidden)');
+      if (activeSection) {
+        const sectionId = activeSection.id;
+        if (sectionId === 'userManagement') {
+          loadUserManagement();
+        } else if (sectionId === 'perDiemManagement') {
+          loadPerDiemManagement();
+        } else if (sectionId === 'financeManagement') {
+          loadFinanceManagement();
+        } else if (sectionId === 'officeMemo') {
+          loadOfficeMemoManagement();
+        }
+      }
+      
+      showNotification('Admin data refreshed', 'success');
+    }
+
+    // ==================== USER MANAGEMENT FUNCTIONS ====================
+
+    function loadUserManagement() {
+      // Update summary statistics
+      document.getElementById('totalUsers').textContent = users.length;
+      document.getElementById('activeUsers').textContent = users.filter(u => u.role !== 'Admin').length;
+      
+      const uniqueRoles = new Set(users.map(u => u.role));
+      document.getElementById('userRoles').textContent = uniqueRoles.size;
+      
+      // Load users table
+      const usersTableBody = document.getElementById('usersTableBody');
+      usersTableBody.innerHTML = '';
+      
+      users.forEach(user => {
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-blue-50';
+        
+        const canEditDelete = user.role !== 'Admin' && user.id !== currentUser.id;
+        
+        row.innerHTML = `
+          <td class="py-3 px-4">${user.name}</td>
+          <td class="py-3 px-4">${user.email}</td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">${user.role}</span>
+          </td>
+          <td class="py-3 px-4">${user.department || 'N/A'}</td>
+          <td class="py-3 px-4">${formatDate(user.createdAt)}</td>
+          <td class="py-3 px-4">
+            ${canEditDelete ? `
+              <button onclick="editUser('${user.id}')" class="text-blue-600 hover:underline mr-2">Edit</button>
+              <button onclick="deleteUser('${user.id}')" class="text-red-600 hover:underline">Delete</button>
+            ` : '<span class="text-gray-400">Protected</span>'}
+          </td>
+        `;
+        
+        usersTableBody.appendChild(row);
+      });
+      
+      // Create users by role chart
+      createUsersByRoleChart();
+      // Create department vs role chart - UPDATED to stacked bar chart
+      createRoleDepartmentChart();
+    }
+
+    function createUsersByRoleChart() {
+      const roleCounts = {};
+      users.forEach(user => {
+        roleCounts[user.role] = (roleCounts[user.role] || 0) + 1;
+      });
+      
+      const ctx = document.getElementById('usersByRoleChart').getContext('2d');
+      
+      // Destroy existing chart if it exists
+      if (window.usersByRoleChart) {
+        window.usersByRoleChart.destroy();
+      }
+      
+      const colors = {
+        'Admin': '#6366f1',
+        'User': '#10b981',
+        'Project Manager': '#f59e0b',
+        'PI': '#ef4444',
+        'Finance Officer': '#8b5cf6'
+      };
+      
+      window.usersByRoleChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(roleCounts),
+          datasets: [{
+            data: Object.values(roleCounts),
+            backgroundColor: Object.keys(roleCounts).map(role => colors[role] || '#6b7280'),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                font: {
+                  size: 12
+                }
+              }
+            },
+            title: {
+              display: true,
+              text: 'User Distribution by Role',
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // UPDATED: Create Department vs Role Stacked Bar Chart
+    function createRoleDepartmentChart() {
+      // Group data by department and role
+      const departmentRoleData = {};
+      
+      users.forEach(user => {
+        const dept = user.department || 'Unknown';
+        if (!departmentRoleData[dept]) {
+          departmentRoleData[dept] = {};
+        }
+        if (!departmentRoleData[dept][user.role]) {
+          departmentRoleData[dept][user.role] = 0;
+        }
+        departmentRoleData[dept][user.role]++;
+      });
+      
+      const departments = Object.keys(departmentRoleData).sort();
+      const roles = ['Admin', 'Finance Officer', 'PI', 'Project Manager', 'User'];
+      
+      // Create dataset for each role
+      const datasets = roles.map((role, index) => {
+        const data = departments.map(dept => departmentRoleData[dept][role] || 0);
+        const colors = {
+          'Admin': '#6366f1',
+          'User': '#10b981',
+          'Project Manager': '#f59e0b',
+          'PI': '#ef4444',
+          'Finance Officer': '#8b5cf6'
+        };
+        
+        return {
+          label: role,
+          data: data,
+          backgroundColor: colors[role] || '#6b7280',
+          borderWidth: 1
+        };
+      });
+      
+      const ctx = document.getElementById('roleDepartmentChart').getContext('2d');
+      
+      // Destroy existing chart if it exists
+      if (window.roleDepartmentChart) {
+        window.roleDepartmentChart.destroy();
+      }
+      
+      window.roleDepartmentChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: departments,
+          datasets: datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              stacked: true,
+              title: {
+                display: true,
+                text: 'Department',
+                font: {
+                  size: 12,
+                  weight: 'bold'
+                }
+              },
+              ticks: {
+                font: {
+                  size: 11
+                }
+              }
+            },
+            y: {
+              stacked: true,
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Number of Users',
+                font: {
+                  size: 12,
+                  weight: 'bold'
+                }
+              },
+              ticks: {
+                stepSize: 1,
+                font: {
+                  size: 11
+                }
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              position: 'top',
+              labels: {
+                font: {
+                  size: 11
+                }
+              }
+            },
+            title: {
+              display: true,
+              text: 'Department vs Role Distribution (Stacked)',
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.dataset.label || '';
+                  const value = context.raw || 0;
+                  const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                  return `${label}: ${value} user${value !== 1 ? 's' : ''}`;
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function exportUserReport() {
+      // Create CSV content
+      const headers = ['Name', 'Email', 'Role', 'Department', 'Joined Date'];
+      const csvRows = [];
+      
+      csvRows.push(headers.join(','));
+      
+      users.forEach(user => {
+        const row = [
+          user.name,
+          user.email,
+          user.role,
+          user.department || '',
+          formatDate(user.createdAt)
+        ];
+        csvRows.push(row.map(cell => `"${cell}"`).join(','));
+      });
+      
+      const csvContent = csvRows.join('\n');
+      
+      // Download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `user_report_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showNotification(`Exported ${users.length} users to CSV`, 'success');
+    }
+
+    function editUser(userId) {
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+      
+      showNotification(`Edit user ${user.name} - Not implemented in demo`, 'info');
+    }
+
+    function deleteUser(userId) {
+      if (!confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+        return;
+      }
+      
+      const user = users.find(u => u.id === userId);
+      if (!user) return;
+      
+      // Don't allow deleting admin users or yourself
+      if (user.role === 'Admin') {
+        showNotification('Cannot delete admin users', 'error');
+        return;
+      }
+      
+      if (user.id === currentUser.id) {
+        showNotification('Cannot delete your own account', 'error');
+        return;
+      }
+      
+      // Remove user
+      users = users.filter(u => u.id !== userId);
+      localStorage.setItem('cis_users', JSON.stringify(users));
+      
+      showNotification(`User ${user.name} deleted successfully`, 'success');
+      loadUserManagement();
+    }
+
+    // ==================== PER DIEM MANAGEMENT FUNCTIONS ====================
+
+    function loadPerDiemManagement() {
+      // Update summary statistics
+      document.getElementById('adminTotalApplications').textContent = perDiemApplications.length;
+      document.getElementById('adminApprovedApplications').textContent = perDiemApplications.filter(app => app.status === 'Approved').length;
+      document.getElementById('adminRejectedApplications').textContent = perDiemApplications.filter(app => app.status.includes('Rejected')).length;
+      
+      // NEW: Count re-approvable applications
+      const reApprovableCount = perDiemApplications.filter(app => app.canBeReApproved === true).length;
+      document.getElementById('adminReApprovableApplications').textContent = reApprovableCount;
+      
+      // Load applications table
+      filterPerDiemAdmin();
+    }
+
+    function filterPerDiemAdmin() {
+      const filterValue = document.getElementById('perDiemFilter').value;
+      const tableBody = document.getElementById('perDiemAdminBody');
+      tableBody.innerHTML = '';
+      
+      let filteredApplications = [...perDiemApplications];
+      
+      // Apply filters
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay());
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      
+      if (filterValue === 'pending') {
+        filteredApplications = filteredApplications.filter(app => 
+          !app.status.includes('Rejected') && app.status !== 'Approved'
+        );
+      } else if (filterValue === 'approved') {
+        filteredApplications = filteredApplications.filter(app => app.status === 'Approved');
+      } else if (filterValue === 'rejected') {
+        filteredApplications = filteredApplications.filter(app => app.status.includes('Rejected'));
+      } else if (filterValue === 'reApprovable') {
+        filteredApplications = filteredApplications.filter(app => app.canBeReApproved === true);
+      } else if (filterValue === 'today') {
+        filteredApplications = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate >= today;
+        });
+      } else if (filterValue === 'thisWeek') {
+        filteredApplications = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate >= startOfWeek;
+        });
+      } else if (filterValue === 'thisMonth') {
+        filteredApplications = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate >= startOfMonth;
+        });
+      }
+      // 'all' shows everything
+      
+      if (filteredApplications.length === 0) {
+        const noApplicationsRow = document.createElement('tr');
+        noApplicationsRow.innerHTML = `
+          <td colspan="9" class="py-8 text-center text-gray-500">
+            <div class="flex flex-col items-center justify-center">
+              <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <p class="text-lg font-medium">No applications found</p>
+              <p class="text-sm mt-1">Try changing your filter criteria.</p>
+            </div>
+          </td>
+        `;
+        tableBody.appendChild(noApplicationsRow);
+        return;
+      }
+      
+      filteredApplications.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      
+      filteredApplications.forEach(application => {
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-blue-50';
+        
+        const statusClass = getStatusClass(application.status);
+        
+        row.innerHTML = `
+          <td class="py-3 px-4 font-medium">${application.id}</td>
+          <td class="py-3 px-4">${application.fullName}</td>
+          <td class="py-3 px-4">${application.department}</td>
+          <td class="py-3 px-4">${getDestinationTypeName(application.destinationType)}</td>
+          <td class="py-3 px-4">${formatDate(application.startDate)} to ${formatDate(application.endDate)}</td>
+          <td class="py-3 px-4">${application.amount.toLocaleString()} ETB</td>
+          <td class="py-3 px-4">
+            <span class="status-badge ${statusClass}">${application.status}</span>
+            ${application.canBeReApproved ? '<span class="ml-2 text-xs bg-yellow-100 text-yellow-800 px-2 py-1 rounded">Re-approvable</span>' : ''}
+          </td>
+          <td class="py-3 px-4">${formatDate(application.createdAt)}</td>
+          <td class="py-3 px-4">
+            <div class="admin-action-buttons">
+              <button onclick="viewApplicationDetails('${application.id}')" class="text-blue-600 hover:underline">View</button>
+              ${application.canBeReApproved ? `
+                <button onclick="adminReApproveApplication('${application.id}')" class="text-yellow-600 hover:underline">Re-approve</button>
+              ` : ''}
+              ${application.status === 'Approved' ? `
+                <button onclick="printAdminFinancialStatement('${application.id}')" class="text-green-600 hover:underline">Statement</button>
+                <button onclick="printAdminOfficeMemo('${application.id}')" class="text-purple-600 hover:underline">Memo</button>
+              ` : ''}
+              ${application.status === 'Approved' && !officeMemos.find(memo => memo.applicationId === application.id) ? `
+                <button onclick="generateOfficeMemoFromApp('${application.id}')" class="text-yellow-600 hover:underline">Generate Memo</button>
+              ` : ''}
+              <!-- DELETE BUTTON FOR ADMIN -->
+              <button onclick="deletePerDiemApplication('${application.id}')" class="text-red-600 hover:underline">Delete</button>
+            </div>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    // NEW: Admin Re-approve Application function
+    function adminReApproveApplication(applicationId) {
+      const application = perDiemApplications.find(app => app.id === applicationId);
+      if (!application) {
+        showNotification('Application not found', 'error');
+        return;
+      }
+      
+      if (!application.canBeReApproved) {
+        showNotification('This application cannot be re-approved.', 'error');
+        return;
+      }
+      
+      // Determine the appropriate status based on current status
+      let newStatus = '';
+      let successMessage = '';
+      
+      if (application.status === 'Rejected by PM') {
+        newStatus = 'Approved by PI'; // Admin can move it directly to PI approval
+        successMessage = 'Application re-approved and sent to PI for review.';
+      } else if (application.status === 'Rejected') {
+        newStatus = 'Approved'; // Admin can approve it directly
+        successMessage = 'Application re-approved by Admin.';
+      }
+      
+      if (newStatus) {
+        // Update application
+        application.status = newStatus;
+        application.statusHistory.push({
+          status: `Re-approved by Admin (was: ${application.status})`,
+          by: currentUser.name,
+          role: currentUser.role,
+          date: new Date().toISOString(),
+          note: 'Re-approved by Admin after previous rejection'
+        });
+        
+        // Add the new approval status
+        application.statusHistory.push({
+          status: newStatus,
+          by: currentUser.name,
+          role: currentUser.role,
+          date: new Date().toISOString()
+        });
+        
+        application.canBeReApproved = false;
+        
+        // Update visibility
+        if (newStatus === 'Approved by PI') {
+          application.visibleToFinance = true;
+        }
+        
+        // Save updated applications
+        localStorage.setItem('cis_perDiemApplications', JSON.stringify(perDiemApplications));
+        
+        showNotification(successMessage, 'success');
+        
+        // Reload the table
+        setTimeout(() => {
+          filterPerDiemAdmin();
+        }, 500);
+      }
+    }
+
+    // DELETE BUTTON FOR ADMIN
+    function deletePerDiemApplication(applicationId) {
+      if (!confirm('Are you sure you want to delete this application? This action cannot be undone.')) {
+        return;
+      }
+      
+      const application = perDiemApplications.find(app => app.id === applicationId);
+      if (!application) {
+        showNotification('Application not found', 'error');
+        return;
+      }
+      
+      // Remove application
+      perDiemApplications = perDiemApplications.filter(app => app.id !== applicationId);
+      localStorage.setItem('cis_perDiemApplications', JSON.stringify(perDiemApplications));
+      
+      // Also remove associated financial statements
+      financialStatements = financialStatements.filter(st => st.applicationId !== applicationId);
+      localStorage.setItem('cis_financialStatements', JSON.stringify(financialStatements));
+      
+      // Also remove associated office memos
+      officeMemos = officeMemos.filter(memo => memo.applicationId !== applicationId);
+      localStorage.setItem('cis_officeMemos', JSON.stringify(officeMemos));
+      
+      showNotification(`Application ${applicationId} deleted successfully`, 'success');
+      
+      // Reload the table
+      filterPerDiemAdmin();
+    }
+
+    function printAdminFinancialStatement(applicationId) {
+      generateFinancialStatement(applicationId);
+    }
+
+    function printAdminOfficeMemo(applicationId) {
+      const memo = officeMemos.find(memo => memo.applicationId === applicationId);
+      if (memo) {
+        printOfficeMemo(memo.id);
+      } else {
+        showNotification('No office memo found for this application. Please generate one first.', 'warning');
+        generateOfficeMemoFromApp(applicationId);
+      }
+    }
+
+    function exportPerDiemAdminReport() {
+      if (perDiemApplications.length === 0) {
+        showNotification('No applications to export', 'warning');
+        return;
+      }
+      
+      // Create CSV content
+      const headers = ['ID', 'Applicant', 'Department', 'Destination', 'Start Date', 'End Date', 'Amount', 'Status', 'Re-approvable', 'Submitted'];
+      const csvRows = [];
+      
+      csvRows.push(headers.join(','));
+      
+      perDiemApplications.forEach(app => {
+        const row = [
+          app.id,
+          app.fullName,
+          app.department,
+          getDestinationTypeName(app.destinationType),
+          formatDate(app.startDate),
+          formatDate(app.endDate),
+          app.amount,
+          app.status,
+          app.canBeReApproved ? 'Yes' : 'No',
+          formatDate(app.createdAt)
+        ];
+        csvRows.push(row.map(cell => `"${cell}"`).join(','));
+      });
+      
+      const csvContent = csvRows.join('\n');
+      
+      // Download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `per_diem_admin_report_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showNotification(`Exported ${perDiemApplications.length} applications to CSV`, 'success');
+    }
+
+    function generateOfficeMemoFromApp(applicationId) {
+      const application = perDiemApplications.find(app => app.id === applicationId);
+      if (!application) {
+        showNotification('Application not found', 'error');
+        return;
+      }
+      
+      if (application.status !== 'Approved') {
+        showNotification('Office memo can only be generated for approved applications', 'error');
+        return;
+      }
+      
+      // Load application into memo form
+      const memoAppSelect = document.getElementById('memoApplicationSelect');
+      if (memoAppSelect) {
+        memoAppSelect.value = applicationId;
+        loadApplicationForMemo();
+      }
+      
+      // Switch to office memo section
+      showAdminSection('officeMemo');
+    }
+
+    // ==================== FINANCE MANAGEMENT FUNCTIONS ====================
+
+    function loadFinanceManagement() {
+      // Update summary statistics
+      document.getElementById('totalApplications').textContent = perDiemApplications.length;
+      document.getElementById('approvedApplications').textContent = perDiemApplications.filter(app => app.status === 'Approved').length;
+      document.getElementById('rejectedApplications').textContent = perDiemApplications.filter(app => app.status.includes('Rejected')).length;
+      
+      const pendingCount = perDiemApplications.length - perDiemApplications.filter(app => app.status === 'Approved').length - perDiemApplications.filter(app => app.status.includes('Rejected')).length;
+      const approvalRate = perDiemApplications.length > 0 ? 
+        Math.round((perDiemApplications.filter(app => app.status === 'Approved').length / perDiemApplications.length) * 100) : 0;
+      
+      document.getElementById('approvalRate').textContent = `${approvalRate}%`;
+      
+      // Create charts with a small delay to ensure DOM is ready
+      setTimeout(() => {
+        createApplicationsByProjectChart();
+        createApprovalStatusChart();
+        createMonthlyTrendsChart();
+        createComparisonChart();
+        loadProjectReport();
+      }, 100);
+    }
+
+    function createApplicationsByProjectChart() {
+      const projectCounts = {};
+      perDiemApplications.forEach(app => {
+        projectCounts[app.paymentSource] = (projectCounts[app.paymentSource] || 0) + 1;
+      });
+      
+      const ctx = document.getElementById('applicationsByProjectChart').getContext('2d');
+      
+      // Destroy existing chart if it exists
+      if (window.applicationsByProjectChart) {
+        window.applicationsByProjectChart.destroy();
+      }
+      
+      const colors = [
+        '#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6'
+      ];
+      
+      window.applicationsByProjectChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: Object.keys(projectCounts),
+          datasets: [{
+            label: 'Number of Applications',
+            data: Object.values(projectCounts),
+            backgroundColor: colors.slice(0, Object.keys(projectCounts).length),
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              },
+              title: {
+                display: true,
+                text: 'Number of Applications',
+                font: {
+                  size: 12,
+                  weight: 'bold'
+                }
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Project',
+                font: {
+                  size: 12,
+                  weight: 'bold'
+                }
+              }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Applications by Project',
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
+            },
+            legend: {
+              display: false
+            }
+          }
+        }
+      });
+    }
+
+    function createApprovalStatusChart() {
+      const statusCounts = {
+        'Approved': perDiemApplications.filter(app => app.status === 'Approved').length,
+        'Pending': perDiemApplications.filter(app => 
+          !app.status.includes('Rejected') && app.status !== 'Approved'
+        ).length,
+        'Rejected': perDiemApplications.filter(app => app.status.includes('Rejected')).length
+      };
+      
+      const ctx = document.getElementById('approvalStatusChart').getContext('2d');
+      
+      // Destroy existing chart if it exists
+      if (window.approvalStatusChart) {
+        window.approvalStatusChart.destroy();
+      }
+      
+      window.approvalStatusChart = new Chart(ctx, {
+        type: 'pie',
+        data: {
+          labels: Object.keys(statusCounts),
+          datasets: [{
+            data: Object.values(statusCounts),
+            backgroundColor: ['#10b981', '#f59e0b', '#ef4444'],
+            borderWidth: 1
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                font: {
+                  size: 12
+                }
+              }
+            },
+            title: {
+              display: true,
+              text: 'Approval Status Distribution',
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function createMonthlyTrendsChart() {
+      // Group applications by month
+      const monthlyData = {};
+      perDiemApplications.forEach(app => {
+        const date = new Date(app.createdAt);
+        const monthYear = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+        monthlyData[monthYear] = (monthlyData[monthYear] || 0) + 1;
+      });
+      
+      // Sort by date
+      const sortedMonths = Object.keys(monthlyData).sort();
+      const sortedCounts = sortedMonths.map(month => monthlyData[month]);
+      
+      const ctx = document.getElementById('monthlyTrendsChart').getContext('2d');
+      
+      // Destroy existing chart if it exists
+      if (window.monthlyTrendsChart) {
+        window.monthlyTrendsChart.destroy();
+      }
+      
+      window.monthlyTrendsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: sortedMonths.map(month => {
+            const [year, monthNum] = month.split('-');
+            return `${monthNum}/${year.slice(2)}`;
+          }),
+          datasets: [{
+            label: 'Applications per Month',
+            data: sortedCounts,
+            borderColor: '#6366f1',
+            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+            fill: true,
+            tension: 0.4,
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              },
+              title: {
+                display: true,
+                text: 'Number of Applications',
+                font: {
+                  size: 12,
+                  weight: 'bold'
+                }
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Month',
+                font: {
+                  size: 12,
+                  weight: 'bold'
+                }
+              }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Monthly Application Trends',
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
+            },
+            legend: {
+              labels: {
+                font: {
+                  size: 12
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function createComparisonChart() {
+      const projects = {};
+      
+      perDiemApplications.forEach(app => {
+        if (!projects[app.paymentSource]) {
+          projects[app.paymentSource] = {
+            total: 0,
+            approved: 0,
+            rejected: 0,
+            pending: 0,
+            reApprovable: 0,
+            totalAmount: 0
+          };
+        }
+        
+        projects[app.paymentSource].total++;
+        projects[app.paymentSource].totalAmount += app.amount;
+        
+        if (app.status === 'Approved') {
+          projects[app.paymentSource].approved++;
+        } else if (app.status.includes('Rejected')) {
+          projects[app.paymentSource].rejected++;
+          if (app.canBeReApproved) {
+            projects[app.paymentSource].reApprovable++;
+          }
+        } else {
+          projects[app.paymentSource].pending++;
+        }
+      });
+      
+      const projectNames = Object.keys(projects);
+      const approvedData = projectNames.map(proj => projects[proj].approved);
+      const rejectedData = projectNames.map(proj => projects[proj].rejected);
+      const pendingData = projectNames.map(proj => projects[proj].pending);
+      const reApprovableData = projectNames.map(proj => projects[proj].reApprovable);
+      const totalAmountData = projectNames.map(proj => projects[proj].totalAmount);
+      
+      const ctx = document.getElementById('comparisonChart').getContext('2d');
+      
+      // Destroy existing chart if it exists
+      if (window.comparisonChart) {
+        window.comparisonChart.destroy();
+      }
+      
+      window.comparisonChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: projectNames,
+          datasets: [
+            {
+              label: 'Approved Applications',
+              data: approvedData,
+              backgroundColor: '#10b981',
+              borderWidth: 1
+            },
+            {
+              label: 'Rejected Applications',
+              data: rejectedData,
+              backgroundColor: '#ef4444',
+              borderWidth: 1
+            },
+            {
+              label: 'Pending Applications',
+              data: pendingData,
+              backgroundColor: '#f59e0b',
+              borderWidth: 1
+            },
+            {
+              label: 'Re-approvable Applications',
+              data: reApprovableData,
+              backgroundColor: '#fbbf24',
+              borderWidth: 1
+            },
+            {
+              label: 'Total Amount (ETB)',
+              data: totalAmountData,
+              backgroundColor: '#6366f1',
+              borderWidth: 2,
+              type: 'line',
+              yAxisID: 'y1',
+              fill: false,
+              tension: 0.4
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Number of Applications',
+                font: {
+                  size: 12,
+                  weight: 'bold'
+                }
+              },
+              ticks: {
+                font: {
+                  size: 11
+                }
+              }
+            },
+            y1: {
+              position: 'right',
+              beginAtZero: true,
+              title: {
+                display: true,
+                text: 'Total Amount (ETB)',
+                font: {
+                  size: 12,
+                  weight: 'bold'
+                }
+              },
+              grid: {
+                drawOnChartArea: false
+              },
+              ticks: {
+                font: {
+                  size: 11
+                },
+                callback: function(value) {
+                  return value.toLocaleString();
+                }
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Project',
+                font: {
+                  size: 12,
+                  weight: 'bold'
+                }
+              },
+              ticks: {
+                font: {
+                  size: 11
+                }
+              }
+            }
+          },
+          plugins: {
+            title: {
+              display: true,
+              text: 'Project Performance Comparison',
+              font: {
+                size: 14,
+                weight: 'bold'
+              }
+            },
+            legend: {
+              labels: {
+                font: {
+                  size: 11
+                }
+              }
+            }
+          }
+        }
+      });
+    }
+
+    function loadProjectReport() {
+      const projectReportBody = document.getElementById('projectReportBody');
+      if (!projectReportBody) return;
+      
+      projectReportBody.innerHTML = '';
+      
+      const projects = {};
+      
+      perDiemApplications.forEach(app => {
+        if (!projects[app.paymentSource]) {
+          projects[app.paymentSource] = {
+            total: 0,
+            approved: 0,
+            rejected: 0,
+            pending: 0,
+            reApprovable: 0,
+            totalAmount: 0
+          };
+        }
+        
+        projects[app.paymentSource].total++;
+        projects[app.paymentSource].totalAmount += app.amount;
+        
+        if (app.status === 'Approved') {
+          projects[app.paymentSource].approved++;
+        } else if (app.status.includes('Rejected')) {
+          projects[app.paymentSource].rejected++;
+          if (app.canBeReApproved) {
+            projects[app.paymentSource].reApprovable++;
+          }
+        } else {
+          projects[app.paymentSource].pending++;
+        }
+      });
+      
+      // Sort projects by name
+      const sortedProjects = Object.entries(projects).sort((a, b) => a[0].localeCompare(b[0]));
+      
+      if (sortedProjects.length === 0) {
+        const noDataRow = document.createElement('tr');
+        noDataRow.innerHTML = `
+          <td colspan="7" class="py-8 text-center text-gray-500">
+            <div class="flex flex-col items-center justify-center">
+              <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <p class="text-lg font-medium">No project data available</p>
+              <p class="text-sm mt-1">Submit per diem applications to see project reports.</p>
+            </div>
+          </td>
+        `;
+        projectReportBody.appendChild(noDataRow);
+        return;
+      }
+      
+      sortedProjects.forEach(([project, data]) => {
+        const approvalRate = data.total > 0 ? Math.round((data.approved / data.total) * 100) : 0;
+        
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-blue-50';
+        
+        row.innerHTML = `
+          <td class="py-3 px-4 font-medium">${project}</td>
+          <td class="py-3 px-4">${data.total}</td>
+          <td class="py-3 px-4">${data.approved}</td>
+          <td class="py-3 px-4">${data.rejected}</td>
+          <td class="py-3 px-4">${data.pending}</td>
+          <td class="py-3 px-4">${approvalRate}%</td>
+          <td class="py-3 px-4">${data.totalAmount.toLocaleString()} ETB</td>
+        `;
+        
+        projectReportBody.appendChild(row);
+      });
+    }
+
+    function generateFinanceReport() {
+      const timePeriod = document.getElementById('timePeriod').value;
+      let filteredApplications = [...perDiemApplications];
+      
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      if (timePeriod === 'lastMonth') {
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const year = currentMonth === 0 ? currentYear - 1 : currentYear;
+        filteredApplications = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate.getMonth() === lastMonth && appDate.getFullYear() === year;
+        });
+      } else if (timePeriod === 'year') {
+        filteredApplications = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate.getFullYear() === currentYear;
+        });
+      } else if (timePeriod === 'lastYear') {
+        filteredApplications = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate.getFullYear() === currentYear - 1;
+        });
+      } else { // 'month' - default
+        filteredApplications = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate.getMonth() === currentMonth && appDate.getFullYear() === currentYear;
+        });
+      }
+      
+      showNotification(`Generated finance report for ${timePeriod} (${filteredApplications.length} applications)`, 'success');
+      
+      // Refresh charts with filtered data
+      loadFinanceManagement();
+    }
+
+    function exportFinanceReport() {
+      const timePeriod = document.getElementById('timePeriod').value;
+      let filteredApplications = [...perDiemApplications];
+      
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      
+      if (timePeriod === 'lastMonth') {
+        const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
+        const year = currentMonth === 0 ? currentYear - 1 : currentYear;
+        filteredApplications = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate.getMonth() === lastMonth && appDate.getFullYear() === year;
+        });
+      } else if (timePeriod === 'year') {
+        filteredApplications = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate.getFullYear() === currentYear;
+        });
+      } else if (timePeriod === 'lastYear') {
+        filteredApplications = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate.getFullYear() === currentYear - 1;
+        });
+      } else { // 'month' - default
+        filteredApplications = filteredApplications.filter(app => {
+          const appDate = new Date(app.createdAt);
+          return appDate.getMonth() === currentMonth && appDate.getFullYear() === currentYear;
+        });
+      }
+      
+      if (filteredApplications.length === 0) {
+        showNotification('No data to export for this time period', 'warning');
+        return;
+      }
+      
+      // Create CSV content
+      const headers = ['ID', 'Applicant', 'Project', 'Status', 'Re-approvable', 'Amount', 'Travel Dates', 'Submitted'];
+      const csvRows = [];
+      
+      csvRows.push(headers.join(','));
+      
+      filteredApplications.forEach(app => {
+        const row = [
+          app.id,
+          app.fullName,
+          app.paymentSource,
+          app.status,
+          app.canBeReApproved ? 'Yes' : 'No',
+          app.amount,
+          `${formatDate(app.startDate)} to ${formatDate(app.endDate)}`,
+          formatDate(app.createdAt)
+        ];
+        csvRows.push(row.map(cell => `"${cell}"`).join(','));
+      });
+      
+      const csvContent = csvRows.join('\n');
+      
+      // Download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `finance_report_${timePeriod}_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showNotification(`Exported ${filteredApplications.length} applications to CSV`, 'success');
+    }
+
+    // ==================== OFFICE MEMO FUNCTIONS ====================
+
+    function loadOfficeMemoManagement() {
+      // Update summary statistics
+      document.getElementById('totalMemos').textContent = officeMemos.length;
+      document.getElementById('generatedMemos').textContent = officeMemos.filter(memo => memo.status === 'Generated').length;
+      document.getElementById('pendingMemos').textContent = officeMemos.filter(memo => memo.status === 'Pending').length;
+      
+      // Load recent office memos
+      loadRecentOfficeMemos();
+      
+      // Populate approved applications dropdown
+      populateMemoApplicationSelect();
+    }
+
+    function loadRecentOfficeMemos() {
+      const tableBody = document.getElementById('officeMemoBody');
+      if (!tableBody) return;
+      
+      tableBody.innerHTML = '';
+      
+      const recentMemos = [...officeMemos].sort((a, b) => new Date(b.generatedDate) - new Date(a.generatedDate)).slice(0, 10);
+      
+      if (recentMemos.length === 0) {
+        const noMemosRow = document.createElement('tr');
+        noMemosRow.innerHTML = `
+          <td colspan="7" class="py-8 text-center text-gray-500">
+            <div class="flex flex-col items-center justify-center">
+              <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <p class="text-lg font-medium">No office memos found</p>
+              <p class="text-sm mt-1">Generate your first office memo using the form below.</p>
+            </div>
+          </td>
+        `;
+        tableBody.appendChild(noMemosRow);
+        return;
+      }
+      
+      recentMemos.forEach(memo => {
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-blue-50';
+        
+        row.innerHTML = `
+          <td class="py-3 px-4 font-medium">${memo.id}</td>
+          <td class="py-3 px-4">${memo.applicationId}</td>
+          <td class="py-3 px-4">${memo.applicantName}</td>
+          <td class="py-3 px-4">${memo.projectName}</td>
+          <td class="py-3 px-4">${memo.amount.toLocaleString()} ETB</td>
+          <td class="py-3 px-4">${formatDate(memo.generatedDate)}</td>
+          <td class="py-3 px-4">
+            <div class="admin-action-buttons">
+              <button onclick="viewOfficeMemo('${memo.id}')" class="text-blue-600 hover:underline">View</button>
+              <button onclick="printOfficeMemo('${memo.id}')" class="text-green-600 hover:underline">Print</button>
+            </div>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    function populateMemoApplicationSelect() {
+      const select = document.getElementById('memoApplicationSelect');
+      if (!select) return;
+      
+      // Clear existing options (except the first one)
+      while (select.options.length > 1) {
+        select.remove(1);
+      }
+      
+      // Get approved applications that don't already have a memo
+      const approvedApplications = perDiemApplications.filter(app => 
+        app.status === 'Approved' && 
+        !officeMemos.find(memo => memo.applicationId === app.id)
+      );
+      
+      approvedApplications.forEach(app => {
+        const option = document.createElement('option');
+        option.value = app.id;
+        option.textContent = `${app.id} - ${app.fullName} (${app.paymentSource} - ${app.amount.toLocaleString()} ETB)`;
+        select.appendChild(option);
+      });
+    }
+
+    function loadApplicationForMemo() {
+      const applicationId = document.getElementById('memoApplicationSelect').value;
+      if (!applicationId) return;
+      
+      const application = perDiemApplications.find(app => app.id === applicationId);
+      if (!application) return;
+      
+      // Auto-fill ledger code based on project
+      const ledgerCodes = {
+        'SLL360': 'SLL-001',
+        'ACS': 'ACS-001',
+        'IKMC': 'IKM-001',
+        'SLS': 'SLS-001',
+        'HPV Vision': 'HPV-001',
+        'Estimate': 'EST-001'
+      };
+      
+      document.getElementById('memoLedgerCode').value = ledgerCodes[application.paymentSource] || 'GEN-001';
+    }
+
+    function generateOfficeMemo() {
+      const applicationId = document.getElementById('memoApplicationSelect').value;
+      const ledgerCode = document.getElementById('memoLedgerCode').value;
+      const notes = document.getElementById('memoNotes').value;
+      
+      if (!applicationId) {
+        showNotification('Please select an application', 'error');
+        return;
+      }
+      
+      if (!ledgerCode) {
+        showNotification('Please enter a ledger code', 'error');
+        return;
+      }
+      
+      const application = perDiemApplications.find(app => app.id === applicationId);
+      if (!application) {
+        showNotification('Application not found', 'error');
+        return;
+      }
+      
+      // Check if memo already exists
+      if (officeMemos.find(memo => memo.applicationId === applicationId)) {
+        showNotification('Office memo already exists for this application', 'warning');
+        viewOfficeMemo(officeMemos.find(memo => memo.applicationId === applicationId).id);
+        return;
+      }
+      
+      // Create new memo
+      const newMemo = {
+        id: 'OM-' + Date.now().toString().slice(-6),
+        applicationId: application.id,
+        applicantName: application.fullName,
+        projectName: application.paymentSource,
+        amount: application.amount,
+        ledgerCode: ledgerCode,
+        notes: notes,
+        status: 'Generated',
+        generatedDate: new Date().toISOString(),
+        piName: application.assignedPIName,
+        destination: getDestinationTypeName(application.destinationType),
+        travelDates: `${formatDate(application.startDate)} to ${formatDate(application.endDate)}`,
+        purpose: application.purpose
+      };
+      
+      officeMemos.push(newMemo);
+      localStorage.setItem('cis_officeMemos', JSON.stringify(officeMemos));
+      
+      showNotification('Office memo generated successfully!', 'success');
+      
+      // Reset form
+      document.getElementById('memoApplicationSelect').value = '';
+      document.getElementById('memoLedgerCode').value = '';
+      document.getElementById('memoNotes').value = '';
+      
+      // Reload memos
+      loadOfficeMemoManagement();
+      
+      // Show the memo
+      viewOfficeMemo(newMemo.id);
+    }
+
+    // FIXED: Memo Preview Function
+    function previewOfficeMemo() {
+      const applicationId = document.getElementById('memoApplicationSelect').value;
+      const ledgerCode = document.getElementById('memoLedgerCode').value;
+      
+      if (!applicationId) {
+        showNotification('Please select an application to preview', 'error');
+        return;
+      }
+      
+      const application = perDiemApplications.find(app => app.id === applicationId);
+      if (!application) {
+        showNotification('Application not found', 'error');
+        return;
+      }
+      
+      // Create a temporary memo for preview
+      const tempMemo = {
+        id: 'OM-PREVIEW',
+        applicationId: application.id,
+        applicantName: application.fullName,
+        projectName: application.paymentSource,
+        amount: application.amount,
+        ledgerCode: ledgerCode || 'PREVIEW-001',
+        generatedDate: new Date().toISOString(),
+        piName: application.assignedPIName,
+        destination: getDestinationTypeName(application.destinationType),
+        travelDates: `${formatDate(application.startDate)} to ${formatDate(application.endDate)}`,
+        purpose: application.purpose
+      };
+      
+      // Populate memo fields directly
+      document.getElementById('memoDate').textContent = formatDate(new Date());
+      document.getElementById('memoId').textContent = 'OM-PREVIEW';
+      document.getElementById('memoPIName').textContent = application.assignedPIName || 'Principal Investigator';
+      document.getElementById('memoProjectName').textContent = application.paymentSource;
+      document.getElementById('memoLedgerCodeDisplay').textContent = ledgerCode || 'PREVIEW-001';
+      document.getElementById('memoTravelerName').textContent = application.fullName;
+      document.getElementById('memoDestination').textContent = getDestinationTypeName(application.destinationType) || 'Destination';
+      document.getElementById('memoTravelDate').textContent = `${formatDate(application.startDate)} to ${formatDate(application.endDate)}`;
+      document.getElementById('memoPurpose').textContent = application.purpose || 'Business Purpose';
+      document.getElementById('memoPISignature').textContent = application.assignedPIName || 'Principal Investigator';
+      
+      // Hide all main sections
+      document.querySelectorAll('main section').forEach(sec => {
+        if (sec.id !== 'officeMemoSection') {
+          sec.classList.add('hidden');
+        }
+      });
+      
+      // Show memo section
+      document.getElementById('officeMemoSection').classList.remove('hidden');
+      
+      showNotification('Memo preview loaded. This is a preview and will not be saved.', 'info');
+    }
+
+    function viewOfficeMemo(memoId) {
+      const memo = officeMemos.find(m => m.id === memoId);
+      if (!memo) {
+        showNotification('Office memo not found', 'error');
+        return;
+      }
+      
+      showOfficeMemo(memo);
+    }
+
+    function showOfficeMemo(memo) {
+      // Populate memo fields
+      document.getElementById('memoDate').textContent = formatDate(memo.generatedDate || new Date());
+      document.getElementById('memoId').textContent = memo.id;
+      document.getElementById('memoPIName').textContent = memo.piName || 'Principal Investigator';
+      document.getElementById('memoProjectName').textContent = memo.projectName;
+      document.getElementById('memoLedgerCodeDisplay').textContent = memo.ledgerCode;
+      document.getElementById('memoTravelerName').textContent = memo.applicantName;
+      document.getElementById('memoDestination').textContent = memo.destination || 'Destination';
+      document.getElementById('memoTravelDate').textContent = memo.travelDates || 'Travel Dates';
+      document.getElementById('memoPurpose').textContent = memo.purpose || 'Business Purpose';
+      document.getElementById('memoPISignature').textContent = memo.piName || 'Principal Investigator';
+      
+      // Hide all main sections
+      document.querySelectorAll('main section').forEach(sec => {
+        if (sec.id !== 'officeMemoSection') {
+          sec.classList.add('hidden');
+        }
+      });
+      
+      // Show memo section
+      document.getElementById('officeMemoSection').classList.remove('hidden');
+    }
+
+    function printOfficeMemo(memoId) {
+      const memo = officeMemos.find(m => m.id === memoId);
+      if (!memo) return;
+      
+      viewOfficeMemo(memoId);
+      
+      // Wait a moment for the memo to render, then trigger print
+      setTimeout(() => {
+        window.print();
+      }, 500);
+    }
+
+    function hideOfficeMemo() {
+      document.getElementById('officeMemoSection').classList.add('hidden');
+      if (currentUser.role === 'Admin') {
+        showPage('admin');
+        showAdminSection('officeMemo');
+      } else {
+        showPage('home');
+      }
+    }
+
+    function filterOfficeMemos() {
+      const filterValue = document.getElementById('memoFilter').value;
+      const tableBody = document.getElementById('officeMemoBody');
+      if (!tableBody) return;
+      
+      tableBody.innerHTML = '';
+      
+      let filteredMemos = [...officeMemos];
+      
+      // Apply filters
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const startOfWeek = new Date(today);
+      startOfWeek.setDate(today.getDate() - today.getDay());
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      
+      if (filterValue === 'today') {
+        filteredMemos = filteredMemos.filter(memo => {
+          const memoDate = new Date(memo.generatedDate);
+          return memoDate >= today;
+        });
+      } else if (filterValue === 'thisWeek') {
+        filteredMemos = filteredMemos.filter(memo => {
+          const memoDate = new Date(memo.generatedDate);
+          return memoDate >= startOfWeek;
+        });
+      } else if (filterValue === 'thisMonth') {
+        filteredMemos = filteredMemos.filter(memo => {
+          const memoDate = new Date(memo.generatedDate);
+          return memoDate >= startOfMonth;
+        });
+      }
+      // 'all' shows everything
+      
+      if (filteredMemos.length === 0) {
+        const noMemosRow = document.createElement('tr');
+        noMemosRow.innerHTML = `
+          <td colspan="7" class="py-8 text-center text-gray-500">
+            <div class="flex flex-col items-center justify-center">
+              <svg class="w-12 h-12 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              <p class="text-lg font-medium">No office memos found</p>
+              <p class="text-sm mt-1">Try changing your filter criteria.</p>
+            </div>
+          </td>
+        `;
+        tableBody.appendChild(noMemosRow);
+        return;
+      }
+      
+      filteredMemos.sort((a, b) => new Date(b.generatedDate) - new Date(a.generatedDate));
+      
+      filteredMemos.forEach(memo => {
+        const row = document.createElement('tr');
+        row.className = 'border-b hover:bg-blue-50';
+        
+        row.innerHTML = `
+          <td class="py-3 px-4 font-medium">${memo.id}</td>
+          <td class="py-3 px-4">${memo.applicationId}</td>
+          <td class="py-3 px-4">${memo.applicantName}</td>
+          <td class="py-3 px-4">${memo.projectName}</td>
+          <td class="py-3 px-4">${memo.amount.toLocaleString()} ETB</td>
+          <td class="py-3 px-4">${formatDate(memo.generatedDate)}</td>
+          <td class="py-3 px-4">
+            <div class="admin-action-buttons">
+              <button onclick="viewOfficeMemo('${memo.id}')" class="text-blue-600 hover:underline">View</button>
+              <button onclick="printOfficeMemo('${memo.id}')" class="text-green-600 hover:underline">Print</button>
+            </div>
+          </td>
+        `;
+        
+        tableBody.appendChild(row);
+      });
+    }
+
+    function exportOfficeMemos() {
+      if (officeMemos.length === 0) {
+        showNotification('No office memos to export', 'warning');
+        return;
+      }
+      
+      // Create CSV content
+      const headers = ['Memo ID', 'Application ID', 'Applicant', 'Project', 'Amount', 'Ledger Code', 'Generated Date'];
+      const csvRows = [];
+      
+      csvRows.push(headers.join(','));
+      
+      officeMemos.forEach(memo => {
+        const row = [
+          memo.id,
+          memo.applicationId,
+          memo.applicantName,
+          memo.projectName,
+          memo.amount,
+          memo.ledgerCode || 'N/A',
+          formatDate(memo.generatedDate)
+        ];
+        csvRows.push(row.map(cell => `"${cell}"`).join(','));
+      });
+      
+      const csvContent = csvRows.join('\n');
+      
+      // Download file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `office_memos_${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      showNotification(`Exported ${officeMemos.length} office memos to CSV`, 'success');
+    }
+  </script>
+</body>
+</html>
